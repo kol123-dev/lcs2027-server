@@ -57,10 +57,42 @@ jobs:
             echo "==> Installing dependencies..."
             npm ci
 
-            echo "==> Syncing database schema..."
-            npx prisma generate
+            echo "==> Ensuring the MySQL database exists..."
+            # Prisma cannot create the database itself; the VPS already runs
+            # MySQL, so create it from the DATABASE_URL in the server .env.
+            DB_RAW=$(grep -E '^DATABASE_URL=' .env | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+            case "$DB_RAW" in
+              mysql://*)
+                _rest=${DB_RAW#mysql://}
+                _creds=${_rest%%@*}
+                _hostport=${_rest#*@}
+                _hostport=${_hostport%%/*}
+                _dbpart=${_rest}
+                _dbpart=${_dbpart#*/}
+                DB_NAME=${_dbpart%%\?*}
+                case "$_hostport" in
+                  *:*) DB_HOST=${_hostport%%:*}; DB_PORT=${_hostport##*:} ;;
+                  *)   DB_HOST=$_hostport; DB_PORT=3306 ;;
+                esac
+                DB_USER=${_creds%%:*}
+                DB_PASS=${_creds#*:}
+                export MYSQL_PWD="$DB_PASS"
+                mysql --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" \
+                  -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+                echo "    ensured database '$DB_NAME' on $DB_HOST:$DB_PORT"
+                ;;
+              *)
+                echo "    WARNING: DATABASE_URL is not mysql:// - production should use MySQL."
+                echo "    Set DATABASE_URL=mysql://user:pass@localhost:3306/lcs2027 in /var/www/lcs2027-server/.env and redeploy."
+                ;;
+            esac
+
+            echo "==> Syncing database schema (MySQL)..."
+            # The client MUST be generated from the MySQL schema so the app can
+            # talk to the production database (local dev keeps SQLite).
+            npx prisma generate --schema prisma/schema.mysql.prisma
             # No tracked migration files; push keeps the schema aligned.
-            npx prisma db push --accept-data-loss
+            npx prisma db push --schema prisma/schema.mysql.prisma --accept-data-loss
 
             echo "==> (Re)starting PM2 process..."
             # Fresh DB seeds itself on first boot from data/2022-results.json.

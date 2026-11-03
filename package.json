@@ -10,7 +10,10 @@
     "dev": "node --watch src/index.js",
     "test": "node --test",
     "db:push": "prisma db push",
+    "db:push:prod": "prisma db push --schema prisma/schema.mysql.prisma",
+    "db:generate:prod": "prisma generate --schema prisma/schema.mysql.prisma",
     "db:seed": "node prisma/seed.mjs",
+    "db:seed:prod": "node prisma/seed.mjs",
     "db:studio": "prisma studio --port 5555"
   },
   "prisma": {

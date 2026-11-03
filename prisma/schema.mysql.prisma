@@ -1,0 +1,207 @@
+// Lillian Siyoi 2027 Campaign — production database schema (MySQL via Prisma).
+//
+// Production runs on the VPS MySQL server (see .env -> DATABASE_URL). Local
+// dev keeps the SQLite schema (`schema.prisma`); the models are identical in
+// both files. ONLY this file is used for production generate / db push
+// (`npm run db:push:prod`, or the deploy workflow).
+//
+// MySQL differences vs the SQLite schema:
+//  - Long / JSON-ish strings use @db.Text (SQLite TEXT is unbounded, but
+//    MySQL VARCHAR(191) would silently truncate them).
+//  - `session.token` is a JWT and needs a unique index — MySQL cannot index
+//    TEXT columns, so it uses @db.VarChar(500).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------- IEBC 2022 baseline ----------------
+
+model SubCounty {
+  id         String   @id // slug e.g. "kwanza"
+  name       String   @unique // "KWANZA"
+  registered Int
+  cast       Int
+  rejected   Int
+  valid      Int
+  siyoi      Int
+  khatundi   Int
+  nakhumicha Int
+  margin     Int
+  opponent   String?
+  turnoutPct Float?
+  siyoiShare Float?
+  candidates String   @default("{}") @db.Text // JSON: candidateKey -> votes
+  wards      Ward[]
+}
+
+model Ward {
+  id           String  @id // slug e.g. "matisi-ward"
+  name         String
+  constituency String // sub-county name ("SABOTI")
+  wardCode     String
+  registered   Int
+  cast         Int
+  rejected     Int
+  valid        Int
+  siyoi        Int
+  khatundi     Int
+  nakhumicha   Int
+  leader       String?
+  margin       Int
+  siyoiShare   Float?
+  status       String? // officials' sticker: Stronghold | Marginal | Opposition
+  candidates   String  @default("{}") @db.Text // JSON: candidateKey -> votes
+  subCountyId  String
+  subCounty    SubCounty   @relation(fields: [subCountyId], references: [id])
+  stations     Station[]
+  centres      Centre[]
+  readiness    WardReadiness?
+
+  @@index([subCountyId])
+  @@index([constituency])
+}
+
+model Station {
+  // NOTE: the seed JSON contains six IEBC codes that each appear as two
+  // distinct rows (same centre, different reconciled tallies), so the polling
+  // station code CANNOT be the primary key. Rows are re-created from the seed
+  // on every `db:seed` run with a deterministic autoincrement id + sortOrder,
+  // preserving all 757 station rows byte-for-byte like centres.
+  id           Int     @id @default(autoincrement())
+  code         String // IEBC code, NOT unique (see note above)
+  name         String
+  constituency String
+  registered   Int
+  cast         Int
+  rejected     Int
+  valid        Int
+  siyoi        Int
+  khatundi     Int
+  nakhumicha   Int
+  verification String?
+  candidates   String  @default("{}") @db.Text // JSON: candidateKey -> votes
+  sortOrder    Int     @default(0)
+  wardId       String
+  ward         Ward    @relation(fields: [wardId], references: [id])
+
+  @@index([wardId])
+  @@index([code])
+  @@index([name])
+  @@index([sortOrder])
+}
+
+model Centre {
+  id             Int     @id @default(autoincrement())
+  name           String
+  constituency   String
+  ward           String // ward name
+  wardCode       String
+  registered     Int
+  cast           Int
+  rejected       Int
+  valid          Int
+  status         String // Stronghold | Marginal | Opposition
+  statusOfficial Boolean
+  candidates     String  @default("{}") @db.Text // JSON: candidateKey -> votes
+  sortOrder      Int     @default(0)
+  // Per-centre campaign content — written by staff via PATCH /api/centres/:id.
+  keyAchievements String  @default("[]") @db.Text // JSON string[] of headline wins
+  campaignMessage  String  @default("")  @db.Text // one-line campaign message
+  wardId         String
+  wardRel        Ward    @relation(fields: [wardId], references: [id])
+
+  @@index([wardId])
+  @@index([name])
+  @@index([sortOrder])
+}
+
+model Candidate {
+  key   String @id // e.g. "lcs" | "khatundi"
+  name  String
+  short String
+  votes Int
+  share Float?
+  rank  Int
+}
+
+// Generic JSON key/value rows (meta, reconciliation, targets, notes).
+model MetaRow {
+  key   String @id
+  value String @db.Text // JSON
+}
+
+// Grassroots field readiness — written by PATCH /api/field/readiness/:wardId.
+model WardReadiness {
+  wardId             String   @id
+  captainsRecruited  Int      @default(0)
+  captainsTrained    Int      @default(0)
+  agentsRecruited    Int      @default(0)
+  agentsTrained      Int      @default(0)
+  parallelTallyReady Int      @default(0)
+  gotvBriefed        Int      @default(0)
+  updatedAt          DateTime @updatedAt
+  ward               Ward     @relation(fields: [wardId], references: [id])
+}
+
+// ---------------- Better Auth (username + password + roles) ----------------
+
+model user {
+  id            String    @id
+  name          String?
+  email         String?   @unique
+  emailVerified Boolean   @default(false)
+  image         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  // username plugin: the Kenyan mobile number (254XXXXXXXXX)
+  username      String?   @unique
+  // additional fields, server-managed
+  role          String?
+  subCounty     String?
+  sessions      session[]
+  accounts      account[]
+}
+
+model session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique @db.VarChar(500) // JWT — TEXT can't be indexed on MySQL
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?  @db.Text
+  userId    String
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model verification {
+  id         String   @id
+  identifier String
+  value      String   @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
