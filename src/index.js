@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import env from "./config/env.js";
 import corsConfig from "./config/cors.js";
 import apiRoutes from "./routes/index.js";
+import dedupeCookies from "./middleware/dedupeCookies.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -12,6 +13,8 @@ app.disable("x-powered-by");
 // detection is accurate (see auth/rateLimit.js for the real-client key).
 app.set("trust proxy", "loopback");
 app.use(corsConfig());
+// Must run before any route reads the session cookie.
+app.use(dedupeCookies);
 app.use(express.json());
 
 // Health endpoint — deliberately outside /api to bypass CORS & auth
