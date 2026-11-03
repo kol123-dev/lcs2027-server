@@ -9,7 +9,16 @@ import { fileURLToPath } from "node:url";
  * every seed run so the dataset stays byte-for-byte in sync with the JSON.
  */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SEED_FILE = process.env.SEED_FILE || path.join(__dirname, "..", "..", "data", "2022-results.json");
+// The verified IEBC 2022 baseline lives in <server>/data in the server-only
+// repo (production VPS layout). The old monorepo kept it one level up at
+// <repo>/data — honour SEED_FILE, else try both locations.
+const SEED_FILE =
+  process.env.SEED_FILE ||
+  [
+    path.join(__dirname, "..", "data", "2022-results.json"),
+    path.join(__dirname, "..", "..", "data", "2022-results.json"),
+  ].find((p) => fs.existsSync(p)) ||
+  path.join(__dirname, "..", "data", "2022-results.json");
 
 const num = (v) => {
   const n = Number(v);
