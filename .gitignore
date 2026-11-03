@@ -1,0 +1,34 @@
+# dependencies
+/node_modules
+
+# environment (contains AUTH_SECRET, DATABASE_URL etc. — never commit)
+.env
+.env*.local
+.env.production
+
+# sqlite database + journals (regenerated via npm run db:push + db:seed)
+prisma/*.db
+prisma/*.db-journal
+prisma/*.sqlite
+*.db
+*.db-journal
+
+# sensitive operational data — audit logs and legacy auth store
+data/audit/
+data/auth-store.json
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# test artifacts
+test-out.txt
+coverage/
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.idea
+.vscode

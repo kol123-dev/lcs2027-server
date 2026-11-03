@@ -1,0 +1,80 @@
+name: Deploy API to VPS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "prisma/**"
+      - "data/2022-results.json"
+      - "data/campaign-content.json"
+      - "package.json"
+      - "package-lock.json"
+      - "ecosystem.config.cjs"
+      - ".env.example"
+      - ".github/workflows/deploy.yml"
+
+# One deploy at a time — don't let a second push race the first.
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME || 'infinia' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          command_timeout: "30m"
+          script: |
+            set -euo pipefail
+            APP_DIR=/var/www/lcs2027-server
+            APP_NAME=lcs2027-api
+            REPO_URL=https://github.com/kol123-dev/lcs2027-server.git
+
+            echo "==> Ensuring app directory..."
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+
+            echo "==> Syncing origin/main..."
+            # Public repo: plain HTTPS URL, no token needed.
+            git init -q 2>/dev/null || true
+            git remote remove origin 2>/dev/null || true
+            git remote add origin "$REPO_URL"
+            git fetch -q --prune origin
+            git checkout -fq -B main origin/main
+            git reset --hard -q origin/main
+
+            echo "==> Bootstrapping .env (only on first deploy)..."
+            # .env is git-ignored, so this never overwrites an existing one.
+            if [ ! -f .env ]; then
+              sed "s/^AUTH_SECRET=.*/AUTH_SECRET=$(openssl rand -base64 48 | tr -d '\n')/" .env.example > .env
+              echo "    .env generated from .env.example (random AUTH_SECRET)."
+              echo "    -> Review BETTER_AUTH_URL and CORS_ORIGINS in /var/www/lcs2027-server/.env"
+            fi
+
+            echo "==> Installing dependencies..."
+            npm ci
+
+            echo "==> Syncing database schema..."
+            npx prisma generate
+            # No tracked migration files; push keeps the schema aligned.
+            npx prisma db push --accept-data-loss
+
+            echo "==> (Re)starting PM2 process..."
+            # Fresh DB seeds itself on first boot from data/2022-results.json.
+            pm2 reload "$APP_NAME" --update-env || pm2 start ecosystem.config.cjs
+            pm2 save
+
+            echo "==> Deploy complete."

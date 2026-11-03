@@ -1,0 +1,294 @@
+{
+  "_meta": {
+    "note": "DRAFT editorial templates. Every item is a starting point for the campaign team — verify facts, figures and beneficiary stories before public use. 'source: template' marks unverified content.",
+    "source": "template",
+    "status": "draft"
+  },
+  "county": {
+    "headlinePrograms": [
+      {
+        "id": "women-enterprise",
+        "title": "Women's Enterprise & 4K Fund Access",
+        "scope": "County-wide",
+        "delivered": "Unblocked 4K-club & enterprise fund application corridors; 2,000+ women's groups onboarded for credit windows.",
+        "vision2027": "Dedicated constituency women's enterprise desk in every sub-county with 90-day disbursement timelines."
+      },
+      {
+        "id": "bursaries-ecde",
+        "title": "Bursary & ECDE Mainstreaming",
+        "scope": "All 25 wards",
+        "delivered": "District & ward bursary pipelines expanded; ECDE feeding programs supported in partner centres.",
+        "vision2027": "Merit-and-need bursary board scoring; ECDE nutrition kits in every ward."
+      },
+      {
+        "id": "market-water",
+        "title": "Markets, Water & Street Lighting",
+        "scope": "Kwanza, Kiminini, Saboti corridors",
+        "delivered": "Market shed rehab & water points commissioned in trading centres; street lighting in market nodes.",
+        "vision2027": "A solar market-lighting masterplan across all 40+ trading centres."
+      },
+      {
+        "id": "pwd-inclusion",
+        "title": "PWD & Elderly Inclusion",
+        "scope": "County-wide",
+        "delivered": "Wheelchair & assistive-device distribution drives; home-visit voter assistance for the elderly.",
+        "vision2027": "Accessible polling support teams and county inclusion fund."
+      },
+      {
+        "id": "dairy-farmer",
+        "title": "Dairy & Farmer Payment Justice",
+        "scope": "Cherangany, Endebess, Saboti belts",
+        "delivered": "Championed KMC payment vigilance and cooperative price desks.",
+        "vision2027": "Digital dairy payment dashboard; county price stabilization round-tables."
+      }
+    ],
+    "achievements": [
+      "2,000+ women's groups linked to enterprise & 4K credit windows (2022–2026).",
+      "Bursary support extended to thousands of students across all 25 wards.",
+      "Market water points & shed repairs in 12+ trading centres.",
+      "PWD assistive drives reached hundreds of beneficiaries county-wide.",
+      "Farmers' cooperative desks held price round-tables in the dairy belt.",
+      "500+ new woman voters escorted through registration drives.",
+      "Ward development record fairs held in all 5 sub-counties."
+    ],
+    "vision2027": [
+      "A 25-ward Service Delivery Tracker — every shilling accounted for publicly.",
+      "County Women's Agenda: enterprise, ECDE, health, safety, land access.",
+      "Zero-woman-left-behind registration & turnout guarantee.",
+      "Youth agripreneurship fund linked to cooperative windows.",
+      "Dedicated market-shed, water & solar-lighting plan per ward."
+    ],
+    "counterNarratives": [
+      "We quote receipts, ward by ward — not slogans.",
+      "While others speak of promises, we open record books at public fairs.",
+      "Every opponent claim is met with a documented delivery log."
+    ]
+  },
+  "wards": {
+    "kinyoro-ward": {
+      "context": "Saboti's largest ward — farming families, growing youth population, strong Siyoi margin to defend.",
+      "delivered": ["Women's group credit windows opened in 6 villages", "Ward bursary blitz at Katumuta zone", "Home-visit registration drives for elderly voters"],
+      "rallyPoints": ["15,000+ voters strong — your voice moves the county.", "Every youth registered is a vote for the future we promised."],
+      "vision2027": ["Village-level water points upgrade", "Youth agripreneurship start-up grants"],
+      "oppositionNarratives": ["'North has been neglected' — we counter with delivery records from every zone."],
+      "champions": ["Katumuta women elders' council"],
+      "issuesTop": ["Water access", "Youth jobs & agri-loans", "Market access"]
+    },
+    "suwerwa-kiptoror": {
+      "context": "Cherangany highland farming ward; Siyoi's biggest 2022 share anywhere in the county.",
+      "delivered": ["Dairy cooperative price desks supported", "4K-club onboarding for women groups", "ECDE feeding program participation"],
+      "rallyPoints": ["The heart of the dairy belt knows who opened the payment lanes.", "From cooperative to county assembly — farmers lead."],
+      "vision2027": ["Dairy input subsidy round-tables", "Farm-to-market feeder road advocacy"],
+      "oppositionNarratives": ["External claims of 'farm neglect' are answered with co-op ledger facts."],
+      "champions": ["Tanykina-linked dairy society reps"],
+      "issuesTop": ["Milk prices & payments", "Input costs", "Feeder roads"]
+    },
+    "matumbei-ward": {
+      "context": "Endebess farming & trading ward; comfortable margin to grow into a fortress.",
+      "delivered": ["Market morning blitzes with vendor desks", "Bursary windows at Miti zone", "Registration drives at coop AGMs"],
+      "rallyPoints": ["Endebess coffee & dairy families are the backbone of this seat.", "We deliver in the rain season and harvest time alike."],
+      "vision2027": ["Coffee farm input fairs", "Market stall upgrade program"],
+      "oppositionNarratives": ["Claims of 'border neglect' countered with border-trade advocacy wins."],
+      "champions": ["Matumbei coffee society reps"],
+      "issuesTop": ["Coffee prices", "Water", "Youth opportunities"]
+    },
+    "endebess-ward": {
+      "context": "Endebess town ward — mixed trade & farming; anchor township events.",
+      "delivered": ["Township market attendance & vendor liaison", "PWD assistive drive stop in Endebess town", "Youth football Siyoi Cup leg"],
+      "rallyPoints": ["Endebess town must keep a strong county voice in 2027.", "Traders, teachers, riders — one agenda: delivery."],
+      "vision2027": ["Township street-light & market-shed plan", "Youth skills & SACCO linkups"],
+      "oppositionNarratives": ["'Town neglect' narrative answered with documented project fairs."],
+      "champions": ["Endebess market traders' committee"],
+      "issuesTop": ["Town sanitation & markets", "Youth unemployment", "Business permits"]
+    },
+    "chepchoina-ward": {
+      "context": "Endebess's largest ward; farming, coffee and youth energy.",
+      "delivered": ["Coffee & dairy round-tables held", "Bursary windows in all 3 zones", "Elderly home-visit registration"],
+      "rallyPoints": ["Chepchoina gave us trust in 2022 — we gave back delivery.", "Every registration desk is a promise kept."],
+      "vision2027": ["Coffee input fairs per zone", "Youth coop savings challenge"],
+      "oppositionNarratives": ["External agency claims met with local delivery logs."],
+      "champions": ["Chepchoina ward youth council"],
+      "issuesTop": ["Coffee & milk income", "Water", "Youth employment"]
+    },
+    "cherangany-suwerwa": {
+      "context": "Cherangany heartland; strong cattle & crop economy, solid margin banked.",
+      "delivered": ["Cooperative price desk round-tables", "Market-day blitzes at trading centres", "ECDE support school visits"],
+      "rallyPoints": ["The highland vote bank that always delivers — because we deliver first.", "Stock feed, school fees, milk money: our agenda is real life."],
+      "vision2027": ["Veterinary & feed access fairs", "Aggregation center advocacy"],
+      "oppositionNarratives": ["'Highland neglect' claims answered with co-op records."],
+      "champions": ["Cherangany Suwerwa welfare groups"],
+      "issuesTop": ["Milk prices", "AC voltage & power", "School bursaries"]
+    },
+    "kwanza-ward": {
+      "context": "Kwanza's biggest ward — urban-rural mix, genuinely contested in 2022 (won by 540).",
+      "delivered": ["Township trader liaison & licence clinics", "Youth SACCO connectivity drives", "Bursary blitz at Kwanza town"],
+      "rallyPoints": ["Kwanza town is the decision ward of this election — we intend to win it properly this time.", "Traders and riders: your issues are on my desk."],
+      "vision2027": ["Kwanza township market & lighting program", "Mobilizer corps of 100+ youth"],
+      "oppositionNarratives": ["Opponents call Kwanza 'up for grabs' — we treat it as home turf.", "We answer every rumour with a ward record fair."],
+      "champions": ["Kwanza town boda & trader reps"],
+      "issuesTop": ["Town jobs", "Market fees & sheds", "Youth safety"]
+    },
+    "saboti-ward": {
+      "context": "Saboti's namesake ward; farming heart, healthy Siyoi margin.",
+      "delivered": ["Farm-field days hosted", "Women's group windows opened", "Church circuit engagement"],
+      "rallyPoints": ["Saboti Ward proves a Woman Rep can be a farmer's champion.", "Church, chama and field: we meet you where you live."],
+      "vision2027": ["Dairy support desks", "ECDE nutrition kits"],
+      "oppositionNarratives": ["'No delivery outside towns' answered with zone-by-zone records."],
+      "champions": ["Saboti dairy & church elders"],
+      "issuesTop": ["Milk prices", "Water", "Bursaries"]
+    },
+    "motosiet-ward": {
+      "context": "Cherangany farming ward; won in 2022, must harden into a stronghold.",
+      "delivered": ["Cooperative price round-tables", "Registration drives at church gatherings", "Market blitzes"],
+      "rallyPoints": ["Motosiet's farms and families deserve the strongest county voice.", "We win this ward again by showing up every month."],
+      "vision2027": ["Farm input fairs", "Youth agri-loans"],
+      "oppositionNarratives": ["'Missed promises' claims refuted with co-op ledgers."],
+      "champions": ["Motosiet women farmers' group"],
+      "issuesTop": ["Input costs", "Milk income", "Roads"]
+    },
+    "tuwani-ward": {
+      "context": "Saboti populous, growing ward; margin to defend and expand.",
+      "delivered": ["Youth football & SACCO drives", "Bursary windows in the ward", "Market liaison visits"],
+      "rallyPoints": ["Tuwani's young people are the future of Saboti — we invest in both.", "Every new voter in Tuwani is a step to our majority."],
+      "vision2027": ["Youth SACCO start-up fund", "Street-light advocacy"],
+      "oppositionNarratives": ["'Youth forgotten' claims countered with tournament & SACCO records."],
+      "champions": ["Tuwani youth SACCO reps"],
+      "issuesTop": ["Youth jobs", "Water", "Trading space"]
+    },
+    "bidii-ward": {
+      "context": "Kwanza farming ward; comfortable margin banked off co-op and welfare networks.",
+      "delivered": ["Farm round-tables hosted", "Women's group windows", "Church circuit blitz"],
+      "rallyPoints": ["Bidii earned its name — hard work, and it shows in delivery.", "Support systems that arrive at the farm gate, not the office."],
+      "vision2027": ["Farm input fairs", "Co-op digitization"],
+      "oppositionNarratives": ["Claims of 'no farm programs' answered with field-day photos & ledgers."],
+      "champions": ["Bidii welfare & co-op reps"],
+      "issuesTop": ["Input prices", "Milk payments", "Water"]
+    },
+    "sitatunga-ward": {
+      "context": "Cherangany ward; strong margin, church and co-op networks dominant.",
+      "delivered": ["Church service attendance program", "Co-op price desks", "ECDE school support"],
+      "rallyPoints": ["Sitatunga's women's guilds carried this seat — we carry their agenda.", "Faith, family, farming: our shared values."],
+      "vision2027": ["Women's guild programs", "ECDE kit rollout"],
+      "oppositionNarratives": ["'Church-goers forgotten' claims countered with blitz records."],
+      "champions": ["Sitatunga women's guild"],
+      "issuesTop": ["Bursaries", "Water", "Church & school support"]
+    },
+    "kaplamai-ward": {
+      "context": "Cherangany ward won in 2022; needs hardening with visible delivery.",
+      "delivered": ["Bursary blitz at Kaplamai", "Farm-field days", "Registration drives at barazas"],
+      "rallyPoints": ["Kaplamai believed in 2022 — we rewarded that trust with action.", "Every baraza is a report card we are proud to read."],
+      "vision2027": ["Farm input fairs", "Youth skills desks"],
+      "oppositionNarratives": ["'Slow delivery' claims answered with ward project records."],
+      "champions": ["Kaplamai zone elders"],
+      "issuesTop": ["Milk prices", "Bursaries", "Roads"]
+    },
+    "kapomboi-ward": {
+      "context": "Kwanza's second-largest ward; lost narrowly in 2022 (by 155) — a true swing to win.",
+      "delivered": ["Boda & trader linkage drives", "Market blitzes", "Registration drives at stages"],
+      "rallyPoints": ["Kapomboi decides careers — we came 155 votes short in 2022; this time we are not short.", "Riders and traders: your networks can carry this ward."],
+      "vision2027": ["Mobilizer corps in every zone", "Stage captain networks formalised"],
+      "oppositionNarratives": ["Opponents count Kapomboi as safe — our data says otherwise.", "We counter 'town neglect' with records."],
+      "champions": ["Kapomboi stage riders' reps"],
+      "issuesTop": ["Town jobs", "Stage & market fees", "Youth"]
+    },
+    "matisi-ward": {
+      "context": "Saboti's biggest ward; lost by just 67 votes in 2022 — the jewel of the swing portfolio.",
+      "delivered": ["Bursary blitz in all 4 zones", "Market liaison & licence clinics", "Youth SACCO drives"],
+      "rallyPoints": ["67 votes — the closest ward in the county. In 2027, Matisi walks with us.", "Every household canvassed is a difference of one."],
+      "vision2027": ["House-to-house canvass final pass by July", "Ward record fair"],
+      "oppositionNarratives": ["'Close race' spin is answered with issue-for-issue delivery scorecards."],
+      "champions": ["Matisi youth & women reps"],
+      "issuesTop": ["Cost of living", "Youth jobs", "Schools & bursaries"]
+    },
+    "waitaluk-ward": {
+      "context": "Kitale urban fringe; won in 2022, densifying rapidly with the best growth rate.",
+      "delivered": ["Township blitzes & trader desks", "Bursary windows", "Elderly registration assistance"],
+      "rallyPoints": ["Waitaluk is growing fast — our services must grow faster.", "Town and country: one county, one voice."],
+      "vision2027": ["Urban market & lighting plan", "Youth SACCO linkages"],
+      "oppositionNarratives": ["'Urban neglect' claims countered with year-round township presence."],
+      "champions": ["Waitaluk market reps"],
+      "issuesTop": ["Rent & living costs", "Town jobs", "Market fees"]
+    },
+    "hospital-ward": {
+      "context": "Kitale town health & commerce belt; won in 2022 amid heavy traffic.",
+      "delivered": ["Health-facility visits & PWD drives", "Trader liaison", "Church circuit in town estates"],
+      "rallyPoints": ["From the hospital corridor to the market row — delivery is visible.", "Health, hustle, hope: the town agenda."],
+      "vision2027": ["Town health outreaches", "Street lighting"],
+      "oppositionNarratives": ["'Talk-only' claims answered with facility logs."],
+      "champions": ["Hospital ward traders' welfare"],
+      "issuesTop": ["Cost of living", "Health access", "Property & permits"]
+    },
+    "makutano-ward": {
+      "context": "Cherangany ward at the junction of trade routes; won in 2022, defend with visibility.",
+      "delivered": ["Market-morning presence", "Bursary windows", "Co-op round-tables"],
+      "rallyPoints": ["Makutano is where roads meet — and where our delivery travels.", "Every passing trader gets a word, a receipt, a promise kept."],
+      "vision2027": ["Junction market upgrade", "Youth trading space advocacy"],
+      "oppositionNarratives": ["'Busy town, absent rep' claims countered with visit logs."],
+      "champions": ["Makutano traders' association"],
+      "issuesTop": ["Market fees", "Water", "Youth trade"]
+    },
+    "nabiswa-ward": {
+      "context": "Kitale ward lost by 962 in 2022 — a marginal to flip with urban delivery wins.",
+      "delivered": ["Township trader liaison", "Bursary blitz", "Youth SACCO drives"],
+      "rallyPoints": ["Nabiswa is ours to win — narrow loss in 2022, big plans in 2027.", "Town estates deserve receipts, not rhetoric."],
+      "vision2027": ["Estate record fairs", "Mobilizer corps"],
+      "oppositionNarratives": ["We flip Nabiswa on delivery scorecards, not promises."],
+      "champions": ["Nabiswa youth & women reps"],
+      "issuesTop": ["Rent & living costs", "Youth jobs", "Estate services"]
+    },
+    "sirende-ward": {
+      "context": "Kitale ward lost by 51 votes in 2022 — the tightest marginal; straight-flippable.",
+      "delivered": ["Estate blitzes & trader desks", "Bursary windows", "PWD drives"],
+      "rallyPoints": ["51 votes. In 2027, Sirende's balance tips with us.", "Every estate meeting is a vote bank opened."],
+      "vision2027": ["Estate-by-estate canvass map", "Ward record fair"],
+      "oppositionNarratives": ["Narrow-loss spin answered with a delivery-led campaign."],
+      "champions": ["Sirende estate elders"],
+      "issuesTop": ["Living costs", "Youth jobs", "Water & estates"]
+    },
+    "keiyo-ward": {
+      "context": "Kwanza ward lost by 253 to the runner-up — a swing with farming roots.",
+      "delivered": ["Farm round-tables", "Registration drives at co-op AGMs", "Women's group windows"],
+      "rallyPoints": ["Keiyo's farmers gave us a hearing; now we give them deliverables.", "Co-op desk, farm gate, church hall — we are present."],
+      "vision2027": ["Farm input fairs", "Youth agri-loans"],
+      "oppositionNarratives": ["'Co-op favouritism' claims countered with transparent round-tables."],
+      "champions": ["Keiyo co-op reps"],
+      "issuesTop": ["Input costs", "Milk prices", "Water"]
+    },
+    "kiminini-ward": {
+      "context": "Kiminini township ward lost by 830 — urban marginal with heavy competition and strong growth.",
+      "delivered": ["Township blitzes", "Trader licence clinics", "Bursary windows at schools"],
+      "rallyPoints": ["Kiminini town is the county's heartbeat — it must have a Woman Rep it claims.", "Traders, teachers, riders: the town agenda is on my desk."],
+      "vision2027": ["Town market & lighting plan", "Estate mobilizer corps"],
+      "oppositionNarratives": ["We counter town-slogans with a delivery log per township node."],
+      "champions": ["Kiminini town traders' association"],
+      "issuesTop": ["Trading costs", "Youth jobs", "Town services"]
+    },
+    "sinyereri-ward": {
+      "context": "Cherangany ward lost by 949 — a marginal with a farmer base to re-wire.",
+      "delivered": ["Co-op price desks on trial", "Farm-field listening tours", "Bursary windows"],
+      "rallyPoints": ["Sinyereri's farms need a champion who knows agronomy AND budgets.", "We are building back trust with transparent field days."],
+      "vision2027": ["Farm input fair circuit", "Youth agri desks"],
+      "oppositionNarratives": ["'Missed farm promises' answered with field-ledger transparency."],
+      "champions": ["Sinyereri farm groups"],
+      "issuesTop": ["Milk & input economics", "Water", "Roads"]
+    },
+    "machewa-ward": {
+      "context": "Saboti ward won by a slender slice in 2022 — swing status, protect with constant presence.",
+      "delivered": ["Market-morning presence", "Bursary windows", "Church circuit"],
+      "rallyPoints": ["Machewa trusted us by a whisker in 2022 — we earned it daily since.", "Small margins demand big consistency."],
+      "vision2027": ["Zone-by-zone canvass schedule", "Ward record fair"],
+      "oppositionNarratives": ["Slim-margin spin answered with a year-round presence log."],
+      "champions": ["Machewa women's guild"],
+      "issuesTop": ["Bursaries", "Water", "Milk prices"]
+    },
+    "sikhendu-ward": {
+      "context": "Kiminini ward where the third candidate (Nakhumicha) won in 2022; a true opposition bastion with trade roots.",
+      "delivered": ["Trader liaison & licence clinics", "Bursary windows", "Registration drives at market"],
+      "rallyPoints": ["Sikhendu knows us by our visits, not our banners.", "We respect the 2022 result and intend to earn this one."],
+      "vision2027": ["Market welfare program", "Youth SACCO desks"],
+      "oppositionNarratives": ["Depth framing: contain the margin, court the defectors, split the base."],
+      "champions": ["Sikhendu market reps"],
+      "issuesTop": ["Trading costs", "Youth jobs", "Town services"]
+    }
+  }
+}
