@@ -10,6 +10,8 @@
 //    MySQL VARCHAR(191) would silently truncate them).
 //  - `session.token` is a JWT and needs a unique index — MySQL cannot index
 //    TEXT columns, so it uses @db.VarChar(500).
+//  - MySQL cannot give TEXT columns literal defaults, so JSON fields use
+//    expression defaults `@default(dbgenerated("('...')"))` (valid MySQL 8.0.13+).
 
 generator client {
   provider = "prisma-client-js"
@@ -36,7 +38,7 @@ model SubCounty {
   opponent   String?
   turnoutPct Float?
   siyoiShare Float?
-  candidates String   @default("{}") @db.Text // JSON: candidateKey -> votes
+  candidates String   @default(dbgenerated("('{}')")) @db.Text // JSON: candidateKey -> votes
   wards      Ward[]
 }
 
@@ -56,7 +58,7 @@ model Ward {
   margin       Int
   siyoiShare   Float?
   status       String? // officials' sticker: Stronghold | Marginal | Opposition
-  candidates   String  @default("{}") @db.Text // JSON: candidateKey -> votes
+  candidates   String  @default(dbgenerated("('{}')")) @db.Text // JSON: candidateKey -> votes
   subCountyId  String
   subCounty    SubCounty   @relation(fields: [subCountyId], references: [id])
   stations     Station[]
@@ -85,7 +87,7 @@ model Station {
   khatundi     Int
   nakhumicha   Int
   verification String?
-  candidates   String  @default("{}") @db.Text // JSON: candidateKey -> votes
+  candidates   String  @default(dbgenerated("('{}')")) @db.Text // JSON: candidateKey -> votes
   sortOrder    Int     @default(0)
   wardId       String
   ward         Ward    @relation(fields: [wardId], references: [id])
@@ -108,11 +110,11 @@ model Centre {
   valid          Int
   status         String // Stronghold | Marginal | Opposition
   statusOfficial Boolean
-  candidates     String  @default("{}") @db.Text // JSON: candidateKey -> votes
+  candidates     String  @default(dbgenerated("('{}')")) @db.Text // JSON: candidateKey -> votes
   sortOrder      Int     @default(0)
   // Per-centre campaign content — written by staff via PATCH /api/centres/:id.
-  keyAchievements String  @default("[]") @db.Text // JSON string[] of headline wins
-  campaignMessage  String  @default("")  @db.Text // one-line campaign message
+  keyAchievements String  @default(dbgenerated("('[]')")) @db.Text // JSON string[] of headline wins
+  campaignMessage  String  @default(dbgenerated("('')")) @db.Text // one-line campaign message
   wardId         String
   wardRel        Ward    @relation(fields: [wardId], references: [id])
 
