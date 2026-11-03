@@ -18,17 +18,24 @@ import centresRoutes from "./centres.routes.js";
 const router = Router();
 
 // Better Auth endpoints (register / login / session / sign-out) mounted with
-// CSRF + audit + rate limiting. Sign-in & sign-up get a tight budget.
+// CSRF + audit + rate limiting.
+//
+// Session reads are polled by the SPA on every navigation (and by the Next.js
+// middleware on every page load), so they get their own generous budget —
+// sharing the credential budget locked everyone out after ~15 page views.
+// Instances are created once at module load: a limiter built per-request has a
+// fresh bucket map each time and would never limit anything.
+const sessionLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 1200 });
+const authLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 30 });
+const credentialLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 8 });
+const SESSION_READ_PATHS = new Set(["/auth/get-session", "/auth/session"]);
+const CREDENTIAL_PATHS = new Set(["/auth/sign-in/username", "/auth/sign-up/email"]);
+
 router.all(
   "/auth/*",
   auditAuth("auth"),
-  rateLimit({ windowMs: 10 * 60 * 1000, max: 30 }),
-  (req, res, next) => {
-    if (req.path === "/auth/sign-in/username" || req.path === "/auth/sign-up/email") {
-      return rateLimit({ windowMs: 5 * 60 * 1000, max: 8 })(req, res, next);
-    }
-    return next();
-  },
+  (req, res, next) => (SESSION_READ_PATHS.has(req.path) ? sessionLimiter : authLimiter)(req, res, next),
+  (req, res, next) => (CREDENTIAL_PATHS.has(req.path) ? credentialLimiter(req, res, next) : next()),
   (req, res) => toNodeHandler(auth)(req, res)
 );
 

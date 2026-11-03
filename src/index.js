@@ -8,6 +8,9 @@ import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 const app = express();
 
 app.disable("x-powered-by");
+// Cloudflare -> nginx -> Node: trust the loopback proxy so protocol/IP
+// detection is accurate (see auth/rateLimit.js for the real-client key).
+app.set("trust proxy", "loopback");
 app.use(corsConfig());
 app.use(express.json());
 

@@ -8,7 +8,21 @@
  */
 import env from "../config/env.js";
 
-export function rateLimit({ windowMs = 10 * 60 * 1000, max = 20, keyFor = (req) => req.ip }) {
+// Behind Cloudflare -> nginx -> Node, every request reaches the app from
+// 127.0.0.1, so `req.ip` alone would bucket every user together. Cloudflare
+// always stamps CF-Connecting-IP and nginx forwards it untouched. Only trust
+// it when the peer really is our loopback proxy, so a direct connection can't
+// spoof a fresh bucket.
+const LOOPBACK_RE = /^(::1|127\.|::ffff:127\.)/;
+const defaultKeyFor = (req) => {
+  const peer = req.socket?.remoteAddress || "";
+  if (LOOPBACK_RE.test(peer) && req.headers["cf-connecting-ip"]) {
+    return req.headers["cf-connecting-ip"];
+  }
+  return req.ip;
+};
+
+export function rateLimit({ windowMs = 10 * 60 * 1000, max = 20, keyFor = defaultKeyFor }) {
   const buckets = new Map(); // key -> { windowStart, hits }
   setInterval(() => {
     const now = Date.now();
