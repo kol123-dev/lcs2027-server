@@ -68,5 +68,13 @@ export const auth = betterAuth({
   advanced: {
     useSecureCookies: env.nodeEnv === "production",
     cookiePrefix: "siyoi2027",
+    // The dashboard (lilliansiyoi.top) and the API (api.lilliansiyoi.top) are
+    // different hosts. Without a shared parent-domain cookie the Next.js
+    // middleware never sees the session and bounces the user straight back to
+    // sign-in after a successful login.
+    crossSubDomainCookies: {
+      enabled: env.nodeEnv === "production",
+      domain: env.cookieDomain,
+    },
   },
 });

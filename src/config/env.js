@@ -11,6 +11,21 @@ const lanOrigins = Object.values(os.networkInterfaces())
   .filter((n) => n && n.family === "IPv4" && !n.internal)
   .map((n) => `http://${n.address}:2027`);
 
+/**
+ * Root domain shared by the dashboard and the API, used to scope the session
+ * cookie across subdomains (e.g. api.lilliansiyoi.top -> lilliansiyoi.top).
+ * Set COOKIE_DOMAIN explicitly for multi-label TLDs (`.co.ke`) where guessing
+ * the last two labels would be wrong.
+ */
+function rootDomain(url) {
+  try {
+    const labels = new URL(url).hostname.split(".");
+    return labels.length > 2 ? labels.slice(-2).join(".") : labels.join(".");
+  } catch {
+    return undefined;
+  }
+}
+
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 4000),
@@ -32,6 +47,9 @@ const env = {
     process.env.AUTH_SECRET || "dev-only-war-room-secret-change-me-aiG5Np8zXk2Q9wV1",
   // Public base URL of this API where the Better Auth client points (cookies & CSRF).
   betterAuthUrl: process.env.BETTER_AUTH_URL || "http://localhost:4000",
+  // Parent domain for cross-subdomain session cookies (production only).
+  cookieDomain:
+    process.env.COOKIE_DOMAIN || rootDomain(process.env.BETTER_AUTH_URL || "http://localhost:4000"),
 };
 
 export default env;
