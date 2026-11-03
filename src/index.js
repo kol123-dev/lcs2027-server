@@ -26,10 +26,12 @@ app.use("/api", apiRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Only bind when run directly (`node src/index.js`), never when the app is
-// imported by the test runner — so `npm test` can spin up ephemeral servers.
+// Only bind when run directly (`node src/index.js`) or managed by PM2,
+// never when the app is imported by the test runner.
 const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
-if (isMainModule && env.nodeEnv !== "test") {
+const isPM2 = "pm_id" in process.env;
+
+if ((isMainModule || isPM2) && env.nodeEnv !== "test") {
   app.listen(env.port, () => {
     // eslint-disable-next-line no-console
     console.log(`[${new Date().toISOString()}] Siyoi 2027 campaign API listening on :${env.port} (${env.nodeEnv})`);
