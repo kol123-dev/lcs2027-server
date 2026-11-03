@@ -23,6 +23,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# tests — dev/CI only, not needed on the production VPS
+test/
+test-support/
+
 # test artifacts
 test-out.txt
 coverage/
