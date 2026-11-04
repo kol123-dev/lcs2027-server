@@ -262,7 +262,14 @@ export const RESOURCES = [
       { name: "startDate", label: "Start date", type: "date", section: "Identity" },
       { name: "summary", label: "Summary", type: "textarea", section: "Narrative" },
       { name: "description", label: "Description", type: "textarea", section: "Narrative" },
-      { name: "detailFields", label: "Sheet extra fields (JSON array of {key,label})", type: "json", jsonShape: "array", section: "Sheet shape" },
+      {
+        name: "detailFields",
+        label: "Sheet fields (JSON array of {key,label,type,…})",
+        type: "json",
+        jsonShape: "array",
+        section: "Sheet shape",
+        help: "A shared field name (name, parentName, phone, wardId…) relabels or hides that column; any other key adds a typed extra: {key,label,type,options?,required?,help?} with type text|textarea|select|number|date.",
+      },
     ],
   },
   {

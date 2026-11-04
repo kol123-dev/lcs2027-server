@@ -14,6 +14,7 @@
     "db:generate:prod": "prisma generate --schema prisma/schema.mysql.prisma",
     "db:seed": "node prisma/seed.mjs",
     "db:seed:prod": "node prisma/seed.mjs",
+    "db:sync-projects": "node prisma/sync-project-sheets.mjs",
     "db:studio": "prisma studio --port 5555"
   },
   "prisma": {
@@ -27,6 +28,7 @@
     "better-auth": "^1.7.15",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
     "express": "^4.19.2"
   },
   "devDependencies": {

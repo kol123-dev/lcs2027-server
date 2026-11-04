@@ -15,6 +15,10 @@ app.set("trust proxy", "loopback");
 app.use(corsConfig());
 // Must run before any route reads the session cookie.
 app.use(dedupeCookies);
+// Spreadsheet imports post the whole workbook base64-encoded, far past the
+// 100kb default, so that path gets its own parser ahead of the global one. The
+// rest of the API keeps the tight default.
+app.use("/api/admin/imports", express.json({ limit: "25mb" }));
 app.use(express.json());
 
 // Health endpoint — deliberately outside /api to bypass CORS & auth

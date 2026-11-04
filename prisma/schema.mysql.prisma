@@ -314,7 +314,7 @@ model Project {
   description   String?  @db.Text // fuller narrative
   unit          String   @default("beneficiary") // what one record issues
   metric        String   @default("count") // "count" | "amount" — headline metric
-  detailFields  String   @default(dbgenerated("('[]')")) @db.Text // JSON: [{key,label}] programme-specific extra fields
+  detailFields  String   @default(dbgenerated("('[]')")) @db.Text // JSON: [{key,label,type,options?,required?,hidden?}] — a shared field name relabels/hides that column, any other key adds a typed extra field
   status        String   @default("active") // "active" | "planned" | "completed"
   startDate     DateTime?
   order         Int      @default(0)

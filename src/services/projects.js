@@ -57,6 +57,152 @@ const parseDetails = (text) => {
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
+/**
+ * The shared delivery sheet every programme starts from.
+ *
+ * `type` drives both the control the console renders and how the value is
+ * validated: text | tel | number | date | textarea | select | ward | station.
+ * A programme may relabel or hide any of these, but the stored columns never
+ * change — so totals stay comparable across every programme.
+ */
+export const SHEET_BASE_FIELDS = [
+  { key: "name", label: "Name of beneficiary / group", type: "text", required: true },
+  { key: "parentName", label: "Parent / guardian", type: "text" },
+  { key: "phone", label: "Active phone number", type: "tel" },
+  { key: "wardId", label: "Ward", type: "ward" },
+  { key: "village", label: "Village", type: "text" },
+  { key: "stationCode", label: "Nearby polling centre", type: "station" },
+  { key: "quantity", label: "Quantity issued", type: "number" },
+  { key: "amount", label: "Amount issued (KES)", type: "number" },
+  { key: "dateIssued", label: "Date issued", type: "date" },
+  { key: "status", label: "Status", type: "select", options: [...BENEFICIARY_STATUS] },
+  { key: "notes", label: "Notes", type: "textarea" },
+];
+
+const BASE_FIELD_KEYS = new Set(SHEET_BASE_FIELDS.map((f) => f.key));
+
+/** Types a programme may use for its own extra columns. */
+export const SHEET_EXTRA_TYPES = ["text", "textarea", "select", "number", "date"];
+
+const EXTRA_KEY_MAX = 60;
+const EXTRA_VALUE_MAX = 300;
+
+/** Normalise one programme-defined extra field, dropping anything unusable. */
+function normaliseExtraField(f) {
+  if (!f || typeof f.key !== "string") return null;
+  const key = f.key.trim().slice(0, EXTRA_KEY_MAX);
+  if (!key || BASE_FIELD_KEYS.has(key)) return null;
+
+  const declared = SHEET_EXTRA_TYPES.includes(f.type) ? f.type : "text";
+  const options = Array.isArray(f.options)
+    ? f.options.map((o) => (typeof o === "string" ? o.trim() : "")).filter(Boolean).slice(0, 60)
+    : [];
+  // A select with no options cannot be answered, so it degrades to free text.
+  const type = declared === "select" && options.length === 0 ? "text" : declared;
+
+  return {
+    key,
+    label: typeof f.label === "string" && f.label.trim() ? f.label.trim() : key,
+    type,
+    ...(type === "select" ? { options } : {}),
+    ...(f.required === true ? { required: true } : {}),
+    ...(typeof f.help === "string" && f.help.trim() ? { help: f.help.trim() } : {}),
+  };
+}
+
+/**
+ * Turn a programme's stored `detailFields` into the sheet the app renders.
+ *
+ * One list expresses both ideas: an entry whose `key` is a shared field name
+ * relabels it (or hides it, with `hidden: true`), while any other key declares
+ * a new typed extra column. Splitting them here means the beneficiary form,
+ * the console and the spreadsheet importer all read one resolved shape.
+ */
+export function resolveSheet(rawFields) {
+  const overrides = new Map();
+  const extras = [];
+
+  for (const f of parseFields(rawFields)) {
+    if (BASE_FIELD_KEYS.has(f.key)) {
+      overrides.set(f.key, f);
+      continue;
+    }
+    const extra = normaliseExtraField(f);
+    if (extra && !extras.some((e) => e.key === extra.key)) extras.push(extra);
+  }
+
+  const base = SHEET_BASE_FIELDS.filter((b) => overrides.get(b.key)?.hidden !== true).map((b) => {
+    const o = overrides.get(b.key);
+    return o && typeof o.label === "string" && o.label.trim() ? { ...b, label: o.label.trim() } : { ...b };
+  });
+
+  return { base, extras };
+}
+
+/**
+ * Validate + normalise a beneficiary's programme-specific extras against the
+ * programme's own field types. Values stay strings (the `details` convention),
+ * so a number or date is enforced here rather than by the column. Keys the
+ * programme does not declare pass through untouched, so editing a row never
+ * silently drops data captured before a field was retired.
+ */
+function coerceDetails(rawDetails, extras, { enforceRequired = false } = {}) {
+  const src = rawDetails && typeof rawDetails === "object" && !Array.isArray(rawDetails) ? rawDetails : {};
+  const byKey = new Map(extras.map((e) => [e.key, e]));
+  const out = {};
+  const errors = [];
+
+  if (enforceRequired) {
+    for (const e of extras) {
+      const v = src[e.key];
+      if (e.required && (v === undefined || v === null || String(v).trim() === "")) {
+        errors.push(`${e.label} is required`);
+      }
+    }
+  }
+
+  for (const [rawKey, rawValue] of Object.entries(src)) {
+    if (rawValue === null || rawValue === undefined) continue;
+    const text = String(rawValue).trim();
+    if (!text) continue;
+
+    const key = String(rawKey).slice(0, EXTRA_KEY_MAX);
+    const def = byKey.get(key);
+    if (!def) {
+      out[key] = text.slice(0, EXTRA_VALUE_MAX);
+      continue;
+    }
+
+    if (def.type === "number") {
+      const n = Number(text.replace(/,/g, ""));
+      if (!Number.isFinite(n)) {
+        errors.push(`${def.label} must be a number`);
+        continue;
+      }
+      out[key] = String(n);
+    } else if (def.type === "date") {
+      const d = new Date(text);
+      if (Number.isNaN(d.getTime())) {
+        errors.push(`${def.label} is not a valid date`);
+        continue;
+      }
+      out[key] = text.slice(0, 10);
+    } else if (def.type === "select") {
+      const options = def.options ?? [];
+      const hit = options.find((o) => o.toLowerCase() === text.toLowerCase());
+      if (options.length && !hit) {
+        errors.push(`${def.label} must be one of: ${options.join(", ")}`);
+        continue;
+      }
+      out[key] = (hit ?? text).slice(0, EXTRA_VALUE_MAX);
+    } else {
+      out[key] = text.slice(0, EXTRA_VALUE_MAX);
+    }
+  }
+
+  return { details: out, errors };
+}
+
 const toBeneficiary = (b) => ({
   id: b.id,
   projectId: b.projectId,
@@ -90,6 +236,7 @@ const toProject = (p, agg) => ({
   unit: p.unit,
   metric: p.metric,
   detailFields: parseFields(p.detailFields),
+  sheet: resolveSheet(p.detailFields),
   status: p.status,
   startDate: p.startDate,
   order: p.order,
@@ -241,8 +388,13 @@ export async function projectDetail(slug, { ward, status, q, page, pageSize } = 
   };
 }
 
-/** Resolve and validate one beneficiary sheet from a request body. */
-function buildBeneficiary(payload = {}, { partial = false } = {}) {
+/**
+ * Resolve and validate one beneficiary sheet from a request body.
+ *
+ * Exported so the spreadsheet importer can validate a row without writing it
+ * (its "validate only" pass), keeping a single set of delivery rules.
+ */
+export function buildBeneficiary(payload = {}, { partial = false, extras = [] } = {}) {
   const data = {};
 
   const has = (k) => payload[k] !== undefined;
@@ -313,20 +465,10 @@ function buildBeneficiary(payload = {}, { partial = false } = {}) {
     if (s && !BENEFICIARY_STATUS.includes(s)) return { error: "Status must be issued or pending" };
     data.status = s || "issued";
   }
-  if (has("details")) {
-    const d = payload.details;
-    if (d === null || d === undefined) {
-      data.details = "{}";
-    } else if (typeof d !== "object" || Array.isArray(d)) {
-      return { error: "details must be an object" };
-    } else {
-      const clean = {};
-      for (const [k, v] of Object.entries(d)) {
-        if (v === null || v === undefined || v === "") continue;
-        clean[String(k).slice(0, 60)] = String(v).slice(0, 300);
-      }
-      data.details = JSON.stringify(clean);
-    }
+  if (has("details") || !partial) {
+    const { details, errors } = coerceDetails(payload.details ?? {}, extras, { enforceRequired: !partial });
+    if (errors.length) return { error: errors[0] };
+    data.details = JSON.stringify(details);
   }
   if (has("notes")) {
     data.notes = payload.notes ? String(payload.notes).trim() : null;
@@ -340,7 +482,8 @@ export async function createBeneficiary(slug, payload) {
   const project = await prisma.project.findUnique({ where: { slug: String(slug) } });
   if (!project) return { error: "Programme not found", code: "NOT_FOUND" };
 
-  const { data, error, code } = buildBeneficiary(payload);
+  const { extras } = resolveSheet(project.detailFields);
+  const { data, error, code } = buildBeneficiary(payload, { extras });
   if (error) return { error, code };
   data.projectId = project.id;
 
@@ -353,10 +496,14 @@ export async function createBeneficiary(slug, payload) {
 
 /** Edit an existing beneficiary sheet. Only the supplied fields change. */
 export async function updateBeneficiary(id, payload) {
-  const existing = await prisma.projectBeneficiary.findUnique({ where: { id: String(id) } });
+  const existing = await prisma.projectBeneficiary.findUnique({
+    where: { id: String(id) },
+    include: { project: { select: { detailFields: true } } },
+  });
   if (!existing) return { error: "Beneficiary not found", code: "NOT_FOUND" };
 
-  const { data, error, code } = buildBeneficiary(payload, { partial: true });
+  const { extras } = resolveSheet(existing.project?.detailFields);
+  const { data, error, code } = buildBeneficiary(payload, { partial: true, extras });
   if (error) return { error, code };
   if (Object.keys(data).length === 0) return { error: "Nothing to update", code: "BAD_REQUEST" };
 
@@ -403,6 +550,9 @@ export default {
   PROJECT_CATEGORIES,
   BENEFICIARY_STATUS,
   PROJECT_STATUS,
+  SHEET_BASE_FIELDS,
+  SHEET_EXTRA_TYPES,
+  resolveSheet,
   projectDirectory,
   projectDetail,
   createBeneficiary,

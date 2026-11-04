@@ -28,8 +28,10 @@ const PROGRAMMES = [
     description:
       "Mobile tents, plastic chairs and event kit are hired out to community groups for weddings, harambees, funerals and church functions — turning a campaign contact into a small income stream for the group that holds the kit.",
     detailFields: [
-      { key: "item", label: "Item Issued" },
-      { key: "group", label: "Group / CBO" },
+      { key: "category", label: "Category", type: "select", options: ["Tent", "Chairs", "Event kit", "Funeral kit"] },
+      { key: "item", label: "Item issued", type: "text" },
+      { key: "group", label: "Group / CBO", type: "text" },
+      { key: "parentName", label: "Contact person" },
     ],
     items: [
       { d: { item: "100-seater tent + 100 chairs", group: "Kwanza Youth CBO" }, q: 1 },
@@ -50,9 +52,10 @@ const PROGRAMMES = [
     description:
       "Termly fee awards and one-off bursaries paid directly to secondary schools, colleges and universities on behalf of students whose households cannot raise the balance.",
     detailFields: [
-      { key: "institution", label: "School / Institution" },
-      { key: "level", label: "Level" },
-      { key: "term", label: "Term / Year" },
+      { key: "category", label: "Category", type: "select", options: ["Bursary", "Full scholarship"] },
+      { key: "institution", label: "School", type: "text" },
+      { key: "level", label: "Level", type: "select", options: ["Primary", "Secondary", "Tertiary", "University"] },
+      { key: "term", label: "Period", type: "text", help: "e.g. 2026 Term 1" },
     ],
     items: [
       { d: { institution: "St. Joseph's Boys High School, Kitale", level: "Secondary", term: "2026 Term 1" }, a: 25000 },
@@ -75,9 +78,12 @@ const PROGRAMMES = [
     description:
       "Working capital released to registered women's groups — table banking, cereals trading, poultry, tailoring and vegetable growing — with a group-named account and a repayment diary.",
     detailFields: [
-      { key: "group", label: "Women's Group" },
-      { key: "activity", label: "Enterprise" },
-      { key: "members", label: "Group Members" },
+      { key: "category", label: "Category", type: "select", options: ["Group funds", "Tents"] },
+      { key: "group", label: "Women's group", type: "text" },
+      { key: "activity", label: "Activity of the group", type: "text" },
+      { key: "members", label: "No. of group members", type: "number" },
+      { key: "period", label: "Period", type: "text" },
+      { key: "parentName", label: "Contact person" },
     ],
     items: [
       { d: { group: "Matisi Widows Group", activity: "Cereals trading", members: "24" }, a: 120000 },
@@ -98,8 +104,9 @@ const PROGRAMMES = [
     description:
       "Mobility aids (wheelchairs, tricycles, crutches, white canes) plus small startup capital and tools so persons with disability can trade, farm or study independently.",
     detailFields: [
-      { key: "item", label: "Mobility / Economic Item" },
-      { key: "need", label: "Support Category" },
+      { key: "category", label: "Category", type: "select", options: ["Mobility aid", "Economic empowerment"] },
+      { key: "item", label: "Mobility / economic item", type: "text" },
+      { key: "need", label: "Support category", type: "text" },
     ],
     items: [
       { d: { item: "Wheelchair", need: "Mobility" }, q: 1 },
@@ -119,8 +126,9 @@ const PROGRAMMES = [
     description:
       "Free recruitment clinics and direct placement linkages into TSC (intern teachers), KDF, NYS cohorts, G4S and private employers — application, medical and vetting support included.",
     detailFields: [
-      { key: "entity", label: "Entity / Employer" },
-      { key: "role", label: "Role / Placement" },
+      { key: "category", label: "Category", type: "select", options: ["Public service", "Uniformed service", "Private sector"] },
+      { key: "entity", label: "Entity / Employer", type: "text" },
+      { key: "role", label: "Role / Placement", type: "text" },
     ],
     items: [
       { d: { entity: "TSC", role: "Intern teacher (primary)" }, q: 1 },
@@ -142,8 +150,10 @@ const PROGRAMMES = [
     description:
       "Community water springs protected with masonry, piping and a pump house; boda boda stages constructed and upgraded with shelters, seating and night lighting.",
     detailFields: [
-      { key: "site", label: "Site" },
-      { key: "scope", label: "Scope of Works" },
+      { key: "category", label: "Category", type: "select", options: ["Water spring", "Boda boda stage"] },
+      { key: "site", label: "Site", type: "text" },
+      { key: "scope", label: "Scope of works", type: "textarea" },
+      { key: "parentName", label: "Contact person" },
     ],
     items: [
       { d: { site: "Chepchoina Spring", scope: "Spring protection + 2 taps" }, q: 1 },
@@ -163,8 +173,9 @@ const PROGRAMMES = [
     description:
       "Iron sheets, timber, cement and skilled labour to rebuild or complete a house for widows, the elderly and households living in unsafe structures.",
     detailFields: [
-      { key: "item", label: "Materials Issued" },
-      { key: "stage", label: "Build Stage" },
+      { key: "category", label: "Category", type: "select", options: ["New build", "Completion", "Repair"] },
+      { key: "item", label: "Materials issued", type: "text" },
+      { key: "stage", label: "Build stage", type: "text" },
     ],
     items: [
       { d: { item: "30 iron sheets + timber", stage: "Roofing" }, q: 30 },
@@ -185,8 +196,9 @@ const PROGRAMMES = [
     description:
       "Door-to-door jigger campaigns: household fumigation, treatment of affected feet, provision of shoes and soap, and hygiene training for the household.",
     detailFields: [
-      { key: "campaign", label: "Campaign / Round" },
-      { key: "household", label: "Persons Treated" },
+      { key: "category", label: "Category", type: "select", options: ["Household treatment", "School outreach"] },
+      { key: "campaign", label: "Campaign / Round", type: "text" },
+      { key: "household", label: "Persons treated", type: "number" },
     ],
     items: [
       { d: { campaign: "Chepchoina Round 1", household: "5" }, q: 5 },
@@ -206,8 +218,9 @@ const PROGRAMMES = [
     description:
       "Business boost grants released to market traders to restock, buy a stall licence or add a second line of goods — issued at the market gate with a stall-by-stall register.",
     detailFields: [
-      { key: "market", label: "Market" },
-      { key: "purpose", label: "Purpose" },
+      { key: "category", label: "Category", type: "select", options: ["Restock grant", "Stall licence", "Business boost"] },
+      { key: "market", label: "Market", type: "text" },
+      { key: "purpose", label: "Purpose", type: "text" },
     ],
     items: [
       { d: { market: "Kitale Municipal Market", purpose: "Produce restock" }, a: 15000 },
@@ -228,8 +241,10 @@ const PROGRAMMES = [
     description:
       "Income-generating machinery handed over to youth groups and individuals: high-pressure carwash machines, electric and manual sewing machines (cherehani), and other trade equipment.",
     detailFields: [
-      { key: "item", label: "Item Issued" },
-      { key: "group", label: "Group / Individual Business" },
+      { key: "category", label: "Category", type: "select", options: ["Carwash machine", "Sewing machine", "Other item"] },
+      { key: "item", label: "Item issued", type: "text" },
+      { key: "group", label: "Group / individual business", type: "text" },
+      { key: "parentName", label: "Contact person" },
     ],
     items: [
       { d: { item: "High-pressure carwash machine", group: "Makutano Youth Carwash" }, q: 1 },
@@ -249,8 +264,9 @@ const PROGRAMMES = [
     description:
       "Working tool kits for trained artisans who had the skill but not the equipment: carpenters, masons, mechanics, welders, electricians, plumbers and tailors.",
     detailFields: [
-      { key: "trade", label: "Trade" },
-      { key: "tool", label: "Tool / Kit Issued" },
+      { key: "category", label: "Category", type: "select", options: ["New kit", "Replacement"] },
+      { key: "trade", label: "Trade", type: "text" },
+      { key: "tool", label: "Tool / kit issued", type: "text" },
     ],
     items: [
       { d: { trade: "Carpentry", tool: "Plane, chisels, hand saw set" }, q: 1 },
@@ -271,8 +287,9 @@ const PROGRAMMES = [
     description:
       "Branded aprons, wide market umbrellas and trade gear issued to traders so they work in comfort and shade — issued stall by stall on market days.",
     detailFields: [
-      { key: "item", label: "Item Issued" },
-      { key: "market", label: "Market" },
+      { key: "category", label: "Category", type: "select", options: ["Apron", "Umbrella", "Full gear"] },
+      { key: "item", label: "Item issued", type: "text" },
+      { key: "market", label: "Market", type: "text" },
     ],
     items: [
       { d: { item: "Market umbrella", market: "Kitale Municipal Market" }, q: 1 },
@@ -293,8 +310,9 @@ const PROGRAMMES = [
     description:
       "Direct grants released to ward and community co-ordinators who hold the ground organisation together — transport, airtime and a working float for their mobilisation work.",
     detailFields: [
-      { key: "purpose", label: "Purpose" },
-      { key: "role", label: "Role" },
+      { key: "category", label: "Category", type: "select", options: ["Ward co-ordinator", "Sub-county co-ordinator", "Youth co-ordinator"] },
+      { key: "purpose", label: "Purpose", type: "text" },
+      { key: "role", label: "Role", type: "text" },
     ],
     items: [
       { d: { purpose: "Mobilisation float", role: "Ward co-ordinator" }, a: 30000 },
@@ -315,8 +333,9 @@ const PROGRAMMES = [
     description:
       "Mattresses and blankets delivered to boarding schools with pupils who cannot raise bedding, and to elderly households in the ward.",
     detailFields: [
-      { key: "item", label: "Item Issued" },
-      { key: "place", label: "School / Village" },
+      { key: "category", label: "Category", type: "select", options: ["Mattress", "Blanket", "Bedding set"] },
+      { key: "item", label: "Item issued", type: "text" },
+      { key: "place", label: "School / village", type: "text" },
     ],
     items: [
       { d: { item: "3-inch mattress + blanket", place: "St. Brigid's Girls" }, q: 1 },
@@ -338,8 +357,9 @@ const PROGRAMMES = [
     description:
       "Shoe drives in primary and special-needs schools — every barefoot pupil measured and issued a pair of school shoes to restore dignity and cut foot infections.",
     detailFields: [
-      { key: "school", label: "School" },
-      { key: "size", label: "Shoe Size" },
+      { key: "category", label: "Category", type: "select", options: ["School shoes", "Socks"] },
+      { key: "school", label: "School", type: "text" },
+      { key: "size", label: "Shoe size", type: "text" },
     ],
     items: [
       { d: { school: "Bidii Primary School", size: "30" }, q: 1 },
@@ -360,8 +380,10 @@ const PROGRAMMES = [
     description:
       "Iron sheets, cement, timber and building materials delivered to churches and mosques for roofing, flooring and construction — handed over with the congregation present.",
     detailFields: [
-      { key: "item", label: "Materials Issued" },
-      { key: "place", label: "Place of Worship" },
+      { key: "category", label: "Category", type: "select", options: ["Church", "Mosque"] },
+      { key: "item", label: "Materials issued", type: "text" },
+      { key: "place", label: "Place of worship", type: "text" },
+      { key: "parentName", label: "Contact person" },
     ],
     items: [
       { d: { item: "25 iron sheets", place: "ACK Bidii Church" }, q: 25 },
@@ -381,8 +403,9 @@ const PROGRAMMES = [
     description:
       "Sanitary towel packets and hygiene kits distributed to schoolgirls across the wards, with a short health talk at each school assembly.",
     detailFields: [
-      { key: "school", label: "School" },
-      { key: "packets", label: "Packets" },
+      { key: "category", label: "Category", type: "select", options: ["Sanitary packets", "Hygiene kit"] },
+      { key: "school", label: "School", type: "text" },
+      { key: "packets", label: "Packets", type: "number" },
     ],
     items: [
       { d: { school: "Kwanza Girls Secondary School", packets: "6" }, q: 6 },
@@ -403,9 +426,11 @@ const PROGRAMMES = [
     description:
       "Jerseys, footballs, netballs and tournament gear handed to ward teams, alongside scouting linkages into county and national leagues and sports academies.",
     detailFields: [
-      { key: "sport", label: "Sport" },
-      { key: "item", label: "Item Issued" },
-      { key: "team", label: "Team" },
+      { key: "category", label: "Category", type: "select", options: ["Jerseys", "Balls", "Full kit"] },
+      { key: "sport", label: "Sport", type: "select", options: ["Football", "Netball", "Volleyball", "Athletics"] },
+      { key: "item", label: "Item issued", type: "text" },
+      { key: "team", label: "Team", type: "text" },
+      { key: "parentName", label: "Team contact" },
     ],
     items: [
       { d: { sport: "Football", item: "18 jerseys + 2 balls", team: "Matisi FC" }, q: 20 },
@@ -426,8 +451,9 @@ const PROGRAMMES = [
     description:
       "Learning materials, foodstuff and specialised equipment delivered to special-needs schools — including Mitoto Special School for the deaf and intellectually disabled.",
     detailFields: [
-      { key: "school", label: "School" },
-      { key: "item", label: "Item Issued" },
+      { key: "category", label: "Category", type: "select", options: ["Learning materials", "Foodstuff", "Equipment"] },
+      { key: "school", label: "School", type: "text" },
+      { key: "item", label: "Item issued", type: "text" },
     ],
     items: [
       { d: { school: "Mitoto Special School", item: "Books, food & learning aids" }, q: 1 },
