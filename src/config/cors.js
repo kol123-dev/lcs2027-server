@@ -30,7 +30,7 @@ export default function corsConfig() {
       }
       return callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
-    methods: ["GET", "POST", "PATCH", "OPTIONS"],
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     // Auth cookies are cross-origin (client :2027 -> API :4000), so the
     // browser must be allowed to send and store them.
     credentials: true,

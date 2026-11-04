@@ -100,7 +100,7 @@ export const RESOURCES = [
     columns: [
       { key: "name", label: "Ward" },
       { key: "constituency", label: "Sub-county" },
-      { key: "subCountyId", label: "Parent record", ref: "subCountyId" },
+      { key: "subCountyId", label: "Parent record", ref: "subcounties" },
       { key: "registered", label: "Registered", align: "right", mono: true },
       { key: "siyoi", label: "Siyoi 2022", align: "right", mono: true },
       { key: "status", label: "Sticker" },
@@ -287,9 +287,9 @@ export const RESOURCES = [
     include: { project: { select: { name: true } }, ward: { select: { name: true } } },
     columns: [
       { key: "name", label: "Beneficiary" },
-      { key: "projectId", label: "Programme", ref: "projectId" },
+      { key: "projectId", label: "Programme", ref: "projects" },
       { key: "phone", label: "Phone", mono: true },
-      { key: "wardId", label: "Ward", ref: "wardId" },
+      { key: "wardId", label: "Ward", ref: "wards" },
       { key: "quantity", label: "Qty", align: "right", mono: true },
       { key: "amount", label: "Amount", align: "right", mono: true },
       { key: "status", label: "Status" },
@@ -330,8 +330,8 @@ export const RESOURCES = [
       { key: "title", label: "Activity" },
       { key: "type", label: "Type" },
       { key: "date", label: "Date", mono: true },
-      { key: "wardId", label: "Ward", ref: "wardId" },
-      { key: "blocId", label: "Bloc", ref: "blocId" },
+      { key: "wardId", label: "Ward", ref: "wards" },
+      { key: "blocId", label: "Bloc", ref: "blocs" },
       { key: "status", label: "Status" },
     ],
     fields: [
@@ -372,7 +372,7 @@ export const RESOURCES = [
       { key: "fullName", label: "Agent" },
       { key: "role", label: "Role" },
       { key: "phone", label: "Phone", mono: true },
-      { key: "wardId", label: "Ward", ref: "wardId" },
+      { key: "wardId", label: "Ward", ref: "wards" },
       { key: "stationName", label: "Polling station" },
       { key: "status", label: "Status" },
     ],
@@ -403,7 +403,7 @@ export const RESOURCES = [
     defaultSort: { field: "wardId", dir: "asc" },
     include: { ward: { select: { name: true } } },
     columns: [
-      { key: "wardId", label: "Ward", ref: "wardId" },
+      { key: "wardId", label: "Ward", ref: "wards" },
       { key: "captainsRecruited", label: "Captains rec.", align: "right", mono: true },
       { key: "captainsTrained", label: "Captains tr.", align: "right", mono: true },
       { key: "agentsRecruited", label: "Agents rec.", align: "right", mono: true },
@@ -438,7 +438,7 @@ export const RESOURCES = [
     columns: [
       { key: "name", label: "Bloc" },
       { key: "category", label: "Category" },
-      { key: "wardId", label: "Ward", ref: "wardId" },
+      { key: "wardId", label: "Ward", ref: "wards" },
       { key: "population", label: "Members", align: "right", mono: true },
       { key: "officialName", label: "Official" },
       { key: "status", label: "Status" },
@@ -475,7 +475,7 @@ export const RESOURCES = [
     include: { bloc: { select: { name: true } } },
     columns: [
       { key: "fullName", label: "Member" },
-      { key: "blocId", label: "Bloc", ref: "blocId" },
+      { key: "blocId", label: "Bloc", ref: "blocs" },
       { key: "gender", label: "Gender" },
       { key: "phone", label: "Phone", mono: true },
     ],
