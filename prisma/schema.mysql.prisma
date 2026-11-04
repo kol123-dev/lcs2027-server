@@ -203,6 +203,9 @@ model Bloc {
   name          String   @unique // "Koross Farm"
   category      String // "farm" | "business"
   population    Int      @default(0) // members the bloc speaks for
+  engagements   Int      @default(0) // outreach engagements completed (target: BLOC_TARGETS)
+  issues        Int      @default(0) // issues logged from the bloc
+  messages      Int      @default(0) // key messages delivered to the bloc
   officialName  String // chairman / group official
   officialPhone String // 254XXXXXXXXX
   officialId    String // official's national ID

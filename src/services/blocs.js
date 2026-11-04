@@ -22,6 +22,12 @@ export const BLOC_CATEGORIES = [
 
 export const BLOC_STATUS = ["active", "dormant"];
 
+// Every bloc is worked to the same rhythm: three engagements, three issues
+// logged, three key messages delivered. The counters live on the row (default
+// 0) so the register shows real progress as field teams fill them in; the
+// targets stay here as the single knob to tune.
+export const BLOC_TARGETS = { engagements: 3, issues: 3, messages: 3 };
+
 const CATEGORY_LABEL = Object.fromEntries(BLOC_CATEGORIES.map((c) => [c.id, c.label]));
 
 const parseMessages = (text) => {
@@ -47,6 +53,9 @@ const toBloc = (b) => ({
   category: b.category,
   categoryLabel: CATEGORY_LABEL[b.category] ?? b.category,
   population: b.population,
+  engagements: b.engagements,
+  issues: b.issues,
+  messages: b.messages,
   officialName: b.officialName,
   officialPhone: b.officialPhone,
   officialId: b.officialId,
@@ -135,6 +144,7 @@ export async function blocRegister({ category, ward, q, page, pageSize } = {}) {
       categories: BLOC_CATEGORIES,
       wards: context.wards.map((w) => ({ id: w.id, name: w.name, constituency: w.constituency })),
     },
+    targets: BLOC_TARGETS,
     totals,
     byCategory: BLOC_CATEGORIES.map((c) => catAgg.get(c.id)).filter(Boolean),
     genderSplit,
@@ -146,4 +156,4 @@ export async function blocRegister({ category, ward, q, page, pageSize } = {}) {
   };
 }
 
-export default { BLOC_CATEGORIES, BLOC_STATUS, blocRegister };
+export default { BLOC_CATEGORIES, BLOC_STATUS, BLOC_TARGETS, blocRegister };
