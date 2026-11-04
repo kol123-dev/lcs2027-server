@@ -1,5 +1,6 @@
 import prisma from "../db.js";
 import seedCampaign from "../../prisma/seed-data.mjs";
+import seedAgents from "../../prisma/seed-agents.mjs";
 import migrateLegacyAuth from "./legacy-auth.mjs";
 import { initReadinessFromDb } from "./readiness.js";
 
@@ -29,6 +30,15 @@ export async function ensureDatabase() {
     process.stdout.write(
       // eslint-disable-next-line no-console
       `[db] imported ${migrated.users} legacy user(s), ${migrated.sessions} session(s), ${migrated.accounts} account(s)\n`
+    );
+  }
+  // Insert-only: a non-empty roster is left untouched, so genuinely recruited
+  // agents are never clobbered by a boot-time top-up.
+  const agents = await seedAgents(prisma);
+  if (agents.created > 0) {
+    process.stdout.write(
+      // eslint-disable-next-line no-console
+      `[db] seeded ${agents.created} field-ops agents\n`
     );
   }
   const readinessRows = await prisma.wardReadiness.findMany();

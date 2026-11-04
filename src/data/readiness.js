@@ -8,12 +8,14 @@ import prisma from "../db.js";
  * be initialised during the context bootstrap without import cycles.
  */
 
+// Wards with no row yet report a true zero — the gauges only ever move when a
+// staff member records progress, so the tracker never shows fabricated data.
 export const DEFAULT_READINESS = {
-  captainsRecruited: 35,
-  captainsTrained: 20,
-  agentsRecruited: 25,
-  agentsTrained: 10,
-  parallelTallyReady: 15,
+  captainsRecruited: 0,
+  captainsTrained: 0,
+  agentsRecruited: 0,
+  agentsTrained: 0,
+  parallelTallyReady: 0,
   gotvBriefed: 0,
 };
 

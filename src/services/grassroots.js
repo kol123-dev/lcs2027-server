@@ -1,72 +1,58 @@
 import context from "../data/context.js";
 import { classifyWard, ASSUMPTIONS } from "./strategy.js";
 import { getReadiness, persistReadiness } from "../data/readiness.js";
+import { COVERAGE, coverageTargets, allocate } from "./agents.js";
 
 /**
  * Polling Agent & Grassroots Network Manager.
  *
- * Agent ratios are configurable so the team can scale staffing to
- * budget. Readiness state is persisted to the database (WardReadiness)
- * and served from an in-memory snapshot warmed at boot.
+ * Agent coverage follows the plan in services/agents.js — one primary agent
+ * per polling station, one backup per 10 stations and one supervisor per 25
+ * stations — with targets derived from the live station count. GOTV mobilizer
+ * ratios stay voter-based. Readiness state is persisted to the database
+ * (WardReadiness) and served from an in-memory snapshot warmed at boot.
  */
 
 export const RATIOS = {
-  // one agent per N registered voters, with hard minimum per centre
-  agentPerVoters: 400,
-  minAgentsPerStation: 3,
-  maxAgentsPerStation: 12,
-  standbyFraction: 0.2,
+  ...COVERAGE,
   // GOTV mobilizers per voter block
   mobilizerPerVoters: 100,
   minMobilizersPerWard: 8,
 };
 
-function agentNeeds(station) {
-  const calc = Math.ceil(station.registered / RATIOS.agentPerVoters);
-  return Math.min(RATIOS.maxAgentsPerStation, Math.max(RATIOS.minAgentsPerStation, calc));
-}
+const mobilizersFor = (ward) =>
+  Math.max(RATIOS.minMobilizersPerWard, Math.round(ward.registered / RATIOS.mobilizerPerVoters));
 
 export function network() {
-  const rows = context.wards.map((w) => {
-    const stations = w.stations.map((s) => {
-      const agents = agentNeeds(s);
-      return {
-        name: s.name,
-        registered: s.registered,
-        cast2022: s.cast,
-        agentsNeeded: agents,
-        standbysNeeded: Math.max(1, Math.ceil(agents * RATIOS.standbyFraction)),
-        mobilizersNeeded: Math.max(RATIOS.minMobilizersPerWard, Math.round(w.registered / RATIOS.mobilizerPerVoters)),
-      };
-    });
-    const agentsNeeded = stations.reduce((a, s) => a + s.agentsNeeded, 0);
-    const standbys = stations.reduce((a, s) => a + s.standbysNeeded, 0);
-    const mobilizers = Math.max(RATIOS.minMobilizersPerWard, Math.round(w.registered / RATIOS.mobilizerPerVoters));
-    return {
-      wardId: w.id,
-      ward: w.name,
-      constituency: w.constituency,
-      category: classifyWard(w),
-      registered: w.registered,
-      turnout2022: w.turnout2022,
-      stations: stations.length,
-      agentsNeeded,
-      standbysNeeded: standbys,
-      mobilizersNeeded: mobilizers,
-      readiness: getReadiness(w.id),
-    };
-  });
+  const county = coverageTargets(context.stationsFlat.length);
+  const stationCounts = context.wards.map((w) => w.stations.length);
+  const backupShares = allocate(county.backup, stationCounts);
+  const supervisorShares = allocate(county.supervisor, stationCounts);
 
-  const totals = rows.reduce(
-    (a, r) => {
-      a.stations += r.stations;
-      a.agentsNeeded += r.agentsNeeded;
-      a.standbys += r.standbysNeeded;
-      a.mobilizers += r.mobilizersNeeded;
-      return a;
-    },
-    { stations: 0, agentsNeeded: 0, standbys: 0, mobilizers: 0 }
-  );
+  const rows = context.wards.map((w, i) => ({
+    wardId: w.id,
+    ward: w.name,
+    constituency: w.constituency,
+    category: classifyWard(w),
+    registered: w.registered,
+    turnout2022: w.turnout2022,
+    stations: stationCounts[i],
+    primaryNeeded: stationCounts[i],
+    backupNeeded: backupShares[i],
+    supervisorNeeded: supervisorShares[i],
+    teamNeeded: stationCounts[i] + backupShares[i] + supervisorShares[i],
+    mobilizersNeeded: mobilizersFor(w),
+    readiness: getReadiness(w.id),
+  }));
+
+  const totals = {
+    stations: county.stations,
+    primary: county.primary,
+    backup: county.backup,
+    supervisor: county.supervisor,
+    team: county.total,
+    mobilizers: rows.reduce((a, r) => a + r.mobilizersNeeded, 0),
+  };
 
   return {
     ratios: RATIOS,
@@ -122,20 +108,17 @@ export function stationsIndex({ ward, q } = {}) {
   return context.wards
     .filter((w) => (ward ? w.id === ward : true))
     .flatMap((w) =>
-      w.stations.map((s) => {
-        const agents = agentNeeds(s);
-        return {
-          name: s.name,
-          ward: w.name,
-          wardId: w.id,
-          constituency: w.constituency,
-          registered: s.registered,
-          cast2022: s.cast,
-          turnout2022Pct: w.registered ? Math.round((s.cast / s.registered) * 1000) / 10 : 0,
-          agentsNeeded: agents,
-          standbysNeeded: Math.max(1, Math.ceil(agents * RATIOS.standbyFraction)),
-        };
-      })
+      w.stations.map((s) => ({
+        name: s.name,
+        code: s.code,
+        ward: w.name,
+        wardId: w.id,
+        constituency: w.constituency,
+        registered: s.registered,
+        cast2022: s.cast,
+        turnout2022Pct: s.registered ? Math.round((s.cast / s.registered) * 1000) / 10 : 0,
+        primaryNeeded: COVERAGE.primaryPerStation,
+      }))
     )
     .filter((s) => (q ? s.name.toLowerCase().includes(q.toLowerCase()) : true));
 }

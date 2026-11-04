@@ -7,6 +7,8 @@ const router = Router();
 // Polling Agent & Grassroots Network Manager
 router.get("/", grassCtl.getNetwork);
 router.get("/stations", grassCtl.getStations);
+// Live polling-agent roster + recruited-vs-target coverage.
+router.get("/agents", grassCtl.getAgents);
 // Only admin/organizer may mutate readiness records.
 router.patch("/readiness/:wardId", staffOnly, grassCtl.patchReadiness);
 
