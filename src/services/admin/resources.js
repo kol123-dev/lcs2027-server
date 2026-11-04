@@ -114,6 +114,30 @@ export async function getResourceRow(resource, key) {
   });
 }
 
+/**
+ * A relation may name a `companion` column that mirrors the target's label —
+ * the beneficiary sheet keeps both the polling centre code and its name. The
+ * relation only writes its own column, so the mirror is filled in here.
+ */
+async function resolveCompanions(resource, data) {
+  for (const field of resource.fields) {
+    if (!field.companion || !field.relation) continue;
+    if (!Object.prototype.hasOwnProperty.call(data, field.name)) continue;
+
+    const raw = data[field.name];
+    if (raw === null || raw === "") {
+      data[field.companion] = null;
+      continue;
+    }
+
+    const target = resourceByKey(field.relation.resource);
+    const row = target
+      ? await prisma[target.model].findFirst({ where: { [field.relation.valueField]: String(raw) } })
+      : null;
+    data[field.companion] = row ? String(row[field.relation.labelField] ?? raw).slice(0, 160) : null;
+  }
+}
+
 export async function createResource(resource, payload = {}) {
   const { data, errors } = coerceFields(resource.fields, payload, { partial: false });
 
@@ -126,6 +150,7 @@ export async function createResource(resource, payload = {}) {
   }
 
   if (errors.length) return { errors };
+  await resolveCompanions(resource, data);
   try {
     const row = await prisma[resource.model].create({ data, include: resource.include });
     return { row };
@@ -145,6 +170,7 @@ export async function updateResource(resource, key, payload = {}) {
   if (errors.length) return { errors };
   if (Object.keys(data).length === 0) return { errors: ["Nothing to update"] };
 
+  await resolveCompanions(resource, data);
   try {
     const row = await prisma[resource.model].update({
       where: { [resource.keyField]: id },
@@ -178,6 +204,10 @@ export async function deleteResource(resource, key) {
  *
  * The console loads this once and uses it to render relation selects and to
  * resolve the plain foreign-key columns (`wardId`, `blocId`, …) into names.
+ * A target may declare a `scopeField` (polling centres follow their ward), in
+ * which case each option carries the scope so the client can narrow the list,
+ * and a `labelSuffixField` that is shown beside the label because centre names
+ * repeat. Options are de-duplicated — a few IEBC codes repeat across tallies.
  */
 export async function buildLookups() {
   const lookups = {};
@@ -188,10 +218,18 @@ export async function buildLookups() {
       ? [{ [resource.defaultSort.field]: resource.defaultSort.dir ?? "asc" }]
       : undefined;
     const rows = await prisma[resource.model].findMany({ orderBy });
-    lookups[target.resource] = rows.map((row) => ({
-      value: String(row[target.valueField]),
-      label: String(row[target.labelField] ?? row[target.valueField]),
-    }));
+    const seen = new Set();
+    lookups[target.resource] = rows.reduce((list, row) => {
+      const value = String(row[target.valueField]);
+      if (seen.has(value)) return list;
+      seen.add(value);
+      const base = String(row[target.labelField] ?? value);
+      const suffix = target.labelSuffixField ? row[target.labelSuffixField] : null;
+      const option = { value, label: suffix ? `${base} (${suffix})` : base };
+      if (target.scopeField) option.scope = row[target.scopeField] == null ? "" : String(row[target.scopeField]);
+      list.push(option);
+      return list;
+    }, []);
   }
   return lookups;
 }

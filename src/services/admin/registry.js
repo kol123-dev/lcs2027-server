@@ -44,6 +44,16 @@ const REL = {
   subCounty: { resource: "subcounties", valueField: "id", labelField: "name" },
   project: { resource: "projects", valueField: "id", labelField: "name" },
   bloc: { resource: "blocs", valueField: "id", labelField: "name" },
+  // Polling centres are stored by IEBC code, so that is the option value.
+  // `scopeField` narrows the list to the ward picked in the same form and
+  // `labelSuffix` shows the code beside the name (centre names repeat).
+  station: {
+    resource: "stations",
+    valueField: "code",
+    labelField: "name",
+    scopeField: "wardId",
+    labelSuffixField: "code",
+  },
 };
 
 export const RESOURCES = [
@@ -301,8 +311,17 @@ export const RESOURCES = [
       { name: "phone", label: "Active phone", type: "text", section: "Identity", help: "07xx / 2547xx / +2547xx" },
       { name: "wardId", label: "Ward", type: "relation", relation: REL.ward, section: "Location" },
       { name: "village", label: "Village", type: "text", section: "Location" },
-      { name: "stationCode", label: "Polling centre code", type: "text", section: "Location" },
-      { name: "stationName", label: "Polling centre name", type: "text", section: "Location" },
+      {
+        name: "stationCode",
+        label: "Polling centre",
+        type: "relation",
+        relation: REL.station,
+        // The sheet keeps the centre's code and name in two columns; picking a
+        // centre here fills both (`resources.js` resolves the mirror column).
+        companion: "stationName",
+        section: "Location",
+        help: "Choose a ward to narrow the list",
+      },
       { name: "quantity", label: "Quantity issued", type: "int", min: 0, section: "Delivery" },
       { name: "amount", label: "Amount issued (KES)", type: "float", min: 0, section: "Delivery" },
       { name: "dateIssued", label: "Date issued", type: "date", section: "Delivery" },
