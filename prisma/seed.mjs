@@ -11,10 +11,12 @@ import prisma from "../src/db.js";
 import seedCampaign from "./seed-data.mjs";
 import migrateLegacyAuth from "../src/data/legacy-auth.mjs";
 import { seedAgents } from "./seed-agents.mjs";
+import { seedBlocs } from "./seed-blocs.mjs";
 
 const counts = await seedCampaign(prisma);
 const migrated = await migrateLegacyAuth(prisma);
 const agents = await seedAgents(prisma);
+const blocs = await seedBlocs(prisma);
 
 console.log(
   `[db] seeded ${counts.subCounties} sub-counties, ${counts.wards} wards, ` +
@@ -24,6 +26,11 @@ console.log(
   `[db] field ops: ${agents.created} agent(s) seeded` +
     (agents.existing ? `, ${agents.existing} already on file` : "") +
     (agents.backfilled ? `, ${agents.backfilled} posted to polling stations` : "")
+);
+console.log(
+  `[db] outreach: ${blocs.created} bloc(s) seeded` +
+    (blocs.members ? `, ${blocs.members} member(s) captured` : "") +
+    (blocs.existing ? `, ${blocs.existing} already on file` : "")
 );
 console.log(
   `[db] auth: imported ${migrated.users} user(s), ${migrated.sessions} session(s), ` +

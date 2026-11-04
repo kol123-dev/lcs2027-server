@@ -61,6 +61,7 @@ model Ward {
   centres      Centre[]
   readiness    WardReadiness?
   agents       Agent[]
+  blocs        Bloc[]
 
   @@index([subCountyId])
   @@index([constituency])
@@ -179,6 +180,62 @@ model Agent {
   @@index([status])
   @@index([stationCode])
   @@index([stationName])
+}
+
+// ---------------- Outreach: demographic blocs ----------------
+
+// A bloc is an organised community the outreach plan is actually executed
+// against — a farm, a traders' association, a boda SACCO, a savings circle.
+// `category` groups them into the blocs the campaign talks about (Farms,
+// Business Community — see BLOC_CATEGORIES in src/services/blocs.js).
+//
+// The polling centre is where the majority of the bloc's members vote. It is
+// stored DENORMALISED (IEBC code + centre name) rather than as a Centre
+// relation: `db:seed` deletes and re-creates every Centre/Station row, so a
+// foreign key would dangle after each seed. The IEBC code is stable in the
+// register, which is what makes it safe to persist.
+model Bloc {
+  id            String   @id @default(cuid())
+  name          String   @unique // "Koross Farm"
+  category      String // "farm" | "business"
+  population    Int      @default(0) // members the bloc speaks for
+  officialName  String // chairman / group official
+  officialPhone String // 254XXXXXXXXX
+  officialId    String // official's national ID
+  stationCode   String? // IEBC code of the majority polling centre
+  stationName   String? // that centre's name
+  wardId        String?
+  ward          Ward?    @relation(fields: [wardId], references: [id])
+  keyMessages   String   @default("[]") // JSON string[] — what this bloc hears
+  status        String   @default("active") // "active" | "dormant"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  members       BlocMember[]
+
+  @@index([category])
+  @@index([wardId])
+  @@index([status])
+  @@index([stationCode])
+}
+
+// One captured member of a bloc. Blocs overlap in real life (a farmer also
+// rides in a boda SACCO), so the national ID is unique per bloc rather than
+// globally, and phones are indexed but not constrained — informal groups often
+// share one handset.
+model BlocMember {
+  id        String   @id @default(cuid())
+  fullName  String
+  idNumber  String // national ID
+  gender    String // "male" | "female"
+  phone     String // 254XXXXXXXXX
+  blocId    String
+  bloc      Bloc     @relation(fields: [blocId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([blocId, idNumber])
+  @@index([blocId])
+  @@index([phone])
 }
 
 // ---------------- Better Auth (username + password + roles) ----------------

@@ -1,7 +1,17 @@
 import { outreach, calculateBudget } from "../services/outreach.js";
+import { blocRegister } from "../services/blocs.js";
 
 export function getOutreach(_req, res) {
   res.json(outreach());
+}
+
+export async function getBlocs(req, res, next) {
+  try {
+    const { category, ward, q, page, pageSize } = req.query;
+    res.json(await blocRegister({ category, ward, q, page, pageSize }));
+  } catch (err) {
+    next(err);
+  }
 }
 
 export function getBudget(req, res) {

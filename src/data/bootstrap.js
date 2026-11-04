@@ -1,6 +1,7 @@
 import prisma from "../db.js";
 import seedCampaign from "../../prisma/seed-data.mjs";
 import seedAgents from "../../prisma/seed-agents.mjs";
+import seedBlocs from "../../prisma/seed-blocs.mjs";
 import migrateLegacyAuth from "./legacy-auth.mjs";
 import { initReadinessFromDb } from "./readiness.js";
 
@@ -45,6 +46,15 @@ export async function ensureDatabase() {
     process.stdout.write(
       // eslint-disable-next-line no-console
       `[db] posted ${agents.backfilled} field-ops agent(s) to polling stations\n`
+    );
+  }
+  // Insert-only: an existing bloc register is left untouched, so real outreach
+  // data is never clobbered by a boot-time top-up.
+  const blocs = await seedBlocs(prisma);
+  if (blocs.created > 0) {
+    process.stdout.write(
+      // eslint-disable-next-line no-console
+      `[db] seeded ${blocs.created} outreach bloc(s), ${blocs.members} member(s) captured\n`
     );
   }
   const readinessRows = await prisma.wardReadiness.findMany();
