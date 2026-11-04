@@ -1,7 +1,8 @@
 import { CATEGORY_META, classifyWard, project2027, wardOpponent, wardOpponentNumber } from "../services/strategy.js";
 import context from "../data/context.js";
 import { listActivities } from "../services/roadmap.js";
-import { beneficiariesForWard } from "../services/projects.js";
+import { beneficiariesForWard, deliverySummaryForWard } from "../services/projects.js";
+import { issuesForWard, nameKey, summariseIssues } from "../services/issues.js";
 
 export function listWards(req, res) {
   const { constituency, category, q } = req.query;
@@ -44,32 +45,68 @@ export async function getWard(req, res, next) {
     const activities = await listActivities({ ward: ward.id });
     // Delivery sheets recorded in this ward (scholarships, tools, bedding…).
     const beneficiaries = await beneficiariesForWard(ward.id);
+    // What the ward has actually received, rolled up per programme.
+    const deliveries = await deliverySummaryForWard(ward.id);
+    // Live problems raised in this ward (at a bloc, at a centre, or ward-wide).
+    const issues = await issuesForWard(ward.id);
+
+    // Index this ward's deliveries + issues by polling centre so each centre
+    // row can show what was done there without one query per centre.
+    const deliveriesByCentre = new Map();
+    for (const b of beneficiaries) {
+      const key = nameKey(b.stationName);
+      if (!key) continue;
+      const list = deliveriesByCentre.get(key) ?? [];
+      list.push(b);
+      deliveriesByCentre.set(key, list);
+    }
+    const issuesByCentre = new Map();
+    for (const i of issues) {
+      const key = nameKey(i.stationName);
+      if (!key) continue;
+      const list = issuesByCentre.get(key) ?? [];
+      list.push(i);
+      issuesByCentre.set(key, list);
+    }
+
     res.json({
       ...ward,
       activities,
       beneficiaries,
+      deliveries,
+      issues,
+      issueSummary: summariseIssues(issues),
       stations: ward.stations.map((s) => ({
         ...s,
         turnout2022Pct: Math.round(s.turnout2022 * 1000) / 10,
       })),
       centres: context.centres
         .filter((c) => c.wardId === ward.id)
-        .map((c) => ({
-          id: c.id,
-          name: c.name,
-          registered: c.registered,
-          cast: c.cast,
-          siyoi: c.siyoi,
-          khatundi: c.khatundi,
-          nakhumicha: c.nakhumicha,
-          valid: c.valid,
-          status: c.status,
-          statusOfficial: c.statusOfficial,
-          siyoiShare: c.siyoiShare,
-          turnout2022: c.turnout2022,
-          turnout2022Pct: Math.round((c.turnout2022 || 0) * 1000) / 10,
-          campaignMessage: c.campaignMessage || "",
-        })),
+        .map((c) => {
+          const key = nameKey(c.name);
+          const centreDeliveries = deliveriesByCentre.get(key) ?? [];
+          const centreIssues = issuesByCentre.get(key) ?? [];
+          return {
+            id: c.id,
+            name: c.name,
+            registered: c.registered,
+            cast: c.cast,
+            siyoi: c.siyoi,
+            khatundi: c.khatundi,
+            nakhumicha: c.nakhumicha,
+            valid: c.valid,
+            margin: (c.siyoi ?? 0) - (c.khatundi ?? 0),
+            status: c.status,
+            statusOfficial: c.statusOfficial,
+            siyoiShare: c.siyoiShare,
+            turnout2022: c.turnout2022,
+            turnout2022Pct: Math.round((c.turnout2022 || 0) * 1000) / 10,
+            campaignMessage: c.campaignMessage || "",
+            deliveryCount: centreDeliveries.length,
+            deliveries: centreDeliveries,
+            issues: centreIssues,
+          };
+        }),
       category: cat,
       categoryMeta: CATEGORY_META[cat],
       opponent: wardOpponent(ward),

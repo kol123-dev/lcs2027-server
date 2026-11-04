@@ -68,6 +68,7 @@ model Ward {
   blocs        Bloc[]
   activities   CampaignActivity[]
   projectBeneficiaries ProjectBeneficiary[]
+  issues       Issue[]
 
   @@index([subCountyId])
   @@index([constituency])
@@ -221,6 +222,7 @@ model Bloc {
   updatedAt     DateTime @updatedAt
   members       BlocMember[]
   activities    CampaignActivity[]
+  issueReports  Issue[]
 
   @@index([category])
   @@index([wardId])
@@ -361,6 +363,44 @@ model ProjectBeneficiary {
   @@index([wardId])
   @@index([stationCode])
   @@index([name])
+  @@index([status])
+}
+
+// ---------------- Issues: live problems reported from the ground ----------------
+
+// An issue is a concrete problem people are living with in an area — a cattle
+// dip with no acaricide, a broken water point, a market with no lighting. It is
+// raised where the campaign meets people: at an outreach bloc, at a polling
+// centre, or across a whole ward.
+//
+// The polling centre is stored DENORMALISED (IEBC code + centre name) exactly
+// like Bloc/Agent/CampaignActivity/ProjectBeneficiary — `db:seed` re-creates
+// Centre/Station rows, so a foreign key would dangle after a seed.
+model Issue {
+  id          String    @id @default(cuid())
+  title       String // "No acaricide at the cattle dip"
+  category    String    @default("other") // water | roads | health | education | agriculture | security | infrastructure | other
+  severity    String    @default("medium") // "low" | "medium" | "high"
+  status      String    @default("open") // "open" | "in-progress" | "resolved"
+  description String?   @db.Text
+  reportedBy  String? // person / group who raised it
+  reportDate  DateTime?
+  wardId      String?
+  ward        Ward?     @relation(fields: [wardId], references: [id])
+  blocId      String?
+  bloc        Bloc?     @relation(fields: [blocId], references: [id])
+  stationCode String? // IEBC code of the polling centre it was raised at
+  stationName String?
+  resolution  String?   @db.Text // what was done, when closed
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([wardId])
+  @@index([blocId])
+  @@index([stationCode])
+  @@index([category])
+  @@index([severity])
   @@index([status])
 }
 

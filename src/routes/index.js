@@ -14,6 +14,7 @@ import outreachRoutes from "./outreach.routes.js";
 import strategyRoutes from "./strategy.routes.js";
 import searchRoutes from "./search.routes.js";
 import centresRoutes from "./centres.routes.js";
+import issuesRoutes from "./issues.routes.js";
 import adminRoutes from "./admin.routes.js";
 
 const router = Router();
@@ -57,6 +58,8 @@ router.use("/outreach", outreachRoutes);
 router.use("/strategy", strategyRoutes);
 router.use("/search", searchRoutes);
 router.use("/centres", centresRoutes);
+// Live issue register (ward / bloc / polling centre problems).
+router.use("/issues", issuesRoutes);
 // Superadmin console — admin role only (guarded again inside the router).
 router.use("/admin", adminRoutes);
 

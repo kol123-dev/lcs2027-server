@@ -523,6 +523,23 @@ export async function deleteBeneficiary(id) {
   return { deleted: true, id: existing.id, name: existing.name };
 }
 
+/** A beneficiary row flattened with its programme — the shape ward/centre views read. */
+const toWardDelivery = (b) => ({
+  ...toBeneficiary(b),
+  projectSlug: b.project?.slug ?? null,
+  projectName: b.project?.name ?? null,
+  projectCategory: b.project?.category ?? null,
+  unit: b.project?.unit ?? "beneficiary",
+});
+
+/** Case/space-insensitive key used to match a delivery to a polling centre. */
+const stationKey = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+
+const withProgramme = {
+  project: { select: { slug: true, name: true, category: true, unit: true, order: true } },
+  ward: { select: { name: true, constituency: true } },
+};
+
 /**
  * Every delivery recorded in a ward — used by the ward detail view so the
  * constituency map links straight through to what was actually issued there.
@@ -530,20 +547,88 @@ export async function deleteBeneficiary(id) {
 export async function beneficiariesForWard(wardId, { limit = 60 } = {}) {
   const rows = await prisma.projectBeneficiary.findMany({
     where: { wardId: String(wardId) },
-    include: {
-      project: { select: { slug: true, name: true, category: true, unit: true } },
-      ward: { select: { name: true, constituency: true } },
-    },
+    include: withProgramme,
     orderBy: [{ createdAt: "asc" }, { name: "asc" }],
     take: limit,
   });
-  return rows.map((b) => ({
-    ...toBeneficiary(b),
-    projectSlug: b.project?.slug ?? null,
-    projectName: b.project?.name ?? null,
-    projectCategory: b.project?.category ?? null,
-    unit: b.project?.unit ?? "beneficiary",
-  }));
+  return rows.map(toWardDelivery);
+}
+
+/**
+ * Roll a list of delivery rows up per programme — the "what has actually been
+ * delivered here" summary the ward and search cards read. Pure, so callers
+ * that already hold the rows (the search index) reuse it without a query.
+ */
+export function rollupProgrammes(rows = [], { limit = 8 } = {}) {
+  const byProject = new Map();
+  for (const r of rows) {
+    const key = r.projectSlug ?? r.projectName ?? "__other__";
+    const agg =
+      byProject.get(key) ??
+      {
+        projectId: r.projectId,
+        projectSlug: r.projectSlug,
+        projectName: r.projectName ?? "Unassigned",
+        category: r.projectCategory,
+        categoryLabel: CATEGORY_LABEL[r.projectCategory] ?? r.projectCategory,
+        unit: r.unit ?? "beneficiary",
+        beneficiaries: 0,
+        quantity: 0,
+        amount: 0,
+        pending: 0,
+      };
+    agg.beneficiaries += 1;
+    agg.quantity += r.quantity ?? 0;
+    agg.amount += r.amount ?? 0;
+    if (r.status !== "issued") agg.pending += 1;
+    byProject.set(key, agg);
+  }
+
+  const programmes = [...byProject.values()].map((a) => ({ ...a, amount: round2(a.amount) }));
+  programmes.sort((a, b) => b.beneficiaries - a.beneficiaries || a.projectName.localeCompare(b.projectName));
+
+  const totals = programmes.reduce(
+    (t, a) => ({ beneficiaries: t.beneficiaries + a.beneficiaries, quantity: t.quantity + a.quantity, amount: round2(t.amount + a.amount) }),
+    { beneficiaries: 0, quantity: 0, amount: 0 },
+  );
+
+  return { projects: programmes.length, totals, programmes: programmes.slice(0, limit) };
+}
+
+/**
+ * What a ward has actually received, rolled up per programme — the live
+ * replacement for the hand-written "delivered" bullet lists that used to sit
+ * on the ward and search cards.
+ */
+export async function deliverySummaryForWard(wardId, { limit = 8 } = {}) {
+  const rows = await prisma.projectBeneficiary.findMany({
+    where: { wardId: String(wardId) },
+    include: withProgramme,
+    orderBy: [{ createdAt: "asc" }, { name: "asc" }],
+  });
+  return rollupProgrammes(rows.map(toWardDelivery), { limit });
+}
+
+/**
+ * The deliveries recorded against one polling centre. Centres carry no IEBC
+ * code of their own, so rows are matched on the centre name recorded on the
+ * beneficiary sheet (scoped to the ward first, so the scan stays tiny).
+ */
+export async function deliveriesForStation({ wardId, stationName, stationCode }, { limit = 40 } = {}) {
+  const key = stationKey(stationName);
+  const code = stationCode ? String(stationCode) : "";
+  if (!key && !code) return [];
+
+  const rows = await prisma.projectBeneficiary.findMany({
+    where: wardId ? { wardId: String(wardId) } : {},
+    include: withProgramme,
+    orderBy: [{ createdAt: "asc" }, { name: "asc" }],
+  });
+
+  return rows
+    .filter((b) => (code && b.stationCode === code) || (key && stationKey(b.stationName) === key))
+    .slice(0, limit)
+    .map(toWardDelivery);
 }
 
 export default {
@@ -559,4 +644,7 @@ export default {
   updateBeneficiary,
   deleteBeneficiary,
   beneficiariesForWard,
+  deliverySummaryForWard,
+  deliveriesForStation,
+  rollupProgrammes,
 };

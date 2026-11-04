@@ -15,6 +15,7 @@
  */
 
 import { PROJECT_CATEGORIES, BENEFICIARY_STATUS, PROJECT_STATUS } from "../projects.js";
+import { ISSUE_CATEGORIES, ISSUE_SEVERITY, ISSUE_STATUS } from "../issues.js";
 
 export const ADMIN_GROUPS = [
   { id: "geography", label: "Geography & 2022 Baseline", blurb: "Sub-counties, wards, polling stations, centres and candidates." },
@@ -22,6 +23,7 @@ export const ADMIN_GROUPS = [
   { id: "roadmap", label: "Roadmap", blurb: "Dated campaign activities across the county." },
   { id: "field", label: "Field Operations", blurb: "Recruited polling agents and ward readiness records." },
   { id: "outreach", label: "Outreach", blurb: "Community blocs and their captured members." },
+  { id: "issues", label: "Issues", blurb: "Live problems raised in wards, at blocs and at polling centres." },
 ];
 
 /** Local option sets — the values the rest of the app stores in these columns. */
@@ -504,6 +506,54 @@ export const RESOURCES = [
       { name: "idNumber", label: "National ID", type: "text", required: true, section: "Identity" },
       { name: "gender", label: "Gender", type: "select", required: true, options: opts(GENDERS), section: "Identity" },
       { name: "phone", label: "Phone", type: "text", required: true, section: "Identity" },
+    ],
+  },
+
+  // ------------------------------------------------------------------- issues
+  {
+    key: "issues",
+    model: "issue",
+    group: "issues",
+    label: "Issues",
+    singular: "Issue",
+    titleField: "title",
+    keyField: "id",
+    keyType: "string",
+    keyGenerated: true,
+    searchFields: ["title", "description", "reportedBy", "stationName"],
+    defaultSort: { field: "createdAt", dir: "desc" },
+    include: { ward: { select: { name: true } }, bloc: { select: { name: true } } },
+    columns: [
+      { key: "title", label: "Issue" },
+      { key: "category", label: "Category" },
+      { key: "severity", label: "Severity" },
+      { key: "status", label: "Status" },
+      { key: "wardId", label: "Ward", ref: "wards" },
+      { key: "blocId", label: "Bloc", ref: "blocs" },
+      { key: "stationName", label: "Polling centre" },
+    ],
+    fields: [
+      { name: "title", label: "Issue", type: "text", required: true, section: "Issue", help: "e.g. No acaricide at the cattle dip" },
+      { name: "category", label: "Category", type: "select", required: true, options: ISSUE_CATEGORIES.map((c) => ({ value: c.id, label: c.label })), section: "Issue" },
+      { name: "severity", label: "Severity", type: "select", required: true, options: opts(ISSUE_SEVERITY), section: "Issue" },
+      { name: "status", label: "Status", type: "select", required: true, options: opts(ISSUE_STATUS), section: "Issue" },
+      { name: "description", label: "Description", type: "textarea", section: "Issue" },
+      { name: "reportedBy", label: "Reported by", type: "text", section: "Issue" },
+      { name: "reportDate", label: "Date reported", type: "date", section: "Issue" },
+      { name: "wardId", label: "Ward", type: "relation", relation: REL.ward, section: "Location" },
+      { name: "blocId", label: "Outreach bloc", type: "relation", relation: REL.bloc, section: "Location" },
+      {
+        name: "stationCode",
+        label: "Polling centre",
+        type: "relation",
+        relation: REL.station,
+        // The row keeps the centre's code AND name; picking a centre fills both.
+        companion: "stationName",
+        section: "Location",
+        help: "Choose a ward to narrow the list",
+      },
+      { name: "resolution", label: "Resolution", type: "textarea", section: "Closure" },
+      { name: "resolvedAt", label: "Resolved on", type: "date", section: "Closure" },
     ],
   },
 ];

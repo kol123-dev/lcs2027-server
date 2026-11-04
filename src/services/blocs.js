@@ -1,6 +1,7 @@
 import prisma from "../db.js";
 import context from "../data/context.js";
 import { serializeActivity, activityInclude } from "./roadmap.js";
+import { toIssue } from "./issues.js";
 
 /**
  * Outreach — the live bloc register.
@@ -69,6 +70,9 @@ const toBloc = (b) => ({
   status: b.status,
   membersCaptured: b._count?.members ?? 0,
   members: (b.members ?? []).map(toMember),
+  // The live problems raised from this community group — the register keeps a
+  // counter (`issues`) and now the actual issues too.
+  issueReports: (b.issueReports ?? []).map(toIssue),
   // Roadmap rows tied to this bloc (e.g. its Mashamba meeting) — so the
   // register surfaces the campaign calendar for each community group.
   activities: (b.activities ?? []).map(serializeActivity),
@@ -114,6 +118,7 @@ export async function blocRegister({ category, ward, q, page, pageSize } = {}) {
         ward: { select: { name: true, constituency: true } },
         members: { orderBy: { fullName: "asc" } },
         activities: { include: activityInclude, orderBy: [{ date: "asc" }, { title: "asc" }] },
+        issueReports: { orderBy: [{ severity: "desc" }, { createdAt: "desc" }], take: 25 },
         _count: { select: { members: true } },
       },
       orderBy: [{ category: "asc" }, { name: "asc" }],
