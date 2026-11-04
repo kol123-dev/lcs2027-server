@@ -6,8 +6,9 @@
  * only when the roster is empty, so re-running `db:seed` never clobbers
  * genuinely recruited agents.
  *
- * Wards are resolved from the database instead of being hardcoded, so this
- * keeps working if ward slugs are ever renamed.
+ * Each agent is posted to a real polling station resolved from the database and
+ * spread evenly across the register, so the ward, station name and IEBC code on
+ * the roster are always genuine 2022 baseline values rather than hardcoded ones.
  */
 
 // 12 primary (1 per polling station), 5 backup, 3 supervisor — a cross-section
@@ -37,17 +38,53 @@ const SAMPLE_AGENTS = [
 ];
 
 export async function seedAgents(prisma) {
-  const existing = await prisma.agent.count();
-  if (existing > 0) return { created: 0, existing };
+  // Stations are ordered by sortOrder (the seed JSON order), so striding across
+  // them posts the roster evenly across every ward and sub-county.
+  const stations = await prisma.station.findMany({
+    select: { code: true, name: true, wardId: true },
+    orderBy: { sortOrder: "asc" },
+  });
 
-  const wards = await prisma.ward.findMany({ select: { id: true }, orderBy: { id: "asc" } });
-  const rows = SAMPLE_AGENTS.map((a, i) => ({
-    ...a,
-    wardId: wards.length ? wards[i % wards.length].id : null,
-  }));
+  const existing = await prisma.agent.count();
+  if (existing > 0) {
+    // Agents recruited before the polling-station columns existed have no
+    // station on file, which would leave a blank column in the roster. Post
+    // only those rows, so real assignments are never overwritten.
+    const unassigned = await prisma.agent.findMany({
+      where: { stationCode: null },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    let backfilled = 0;
+    if (stations.length && unassigned.length) {
+      for (let i = 0; i < unassigned.length; i++) {
+        const station = stations[Math.floor((i * stations.length) / unassigned.length)];
+        await prisma.agent.update({
+          where: { id: unassigned[i].id },
+          data: { wardId: station.wardId, stationCode: station.code, stationName: station.name },
+        });
+        backfilled += 1;
+      }
+    }
+
+    return { created: 0, existing, backfilled };
+  }
+
+  const rows = SAMPLE_AGENTS.map((a, i) => {
+    const station = stations.length
+      ? stations[Math.floor((i * stations.length) / SAMPLE_AGENTS.length)]
+      : null;
+    return {
+      ...a,
+      wardId: station?.wardId ?? null,
+      stationCode: station?.code ?? null,
+      stationName: station?.name ?? null,
+    };
+  });
 
   await prisma.agent.createMany({ data: rows });
-  return { created: rows.length, existing: 0 };
+  return { created: rows.length, existing: 0, backfilled: 0 };
 }
 
 export { SAMPLE_AGENTS };

@@ -22,7 +22,8 @@ console.log(
 );
 console.log(
   `[db] field ops: ${agents.created} agent(s) seeded` +
-    (agents.existing ? `, ${agents.existing} already on file` : "")
+    (agents.existing ? `, ${agents.existing} already on file` : "") +
+    (agents.backfilled ? `, ${agents.backfilled} posted to polling stations` : "")
 );
 console.log(
   `[db] auth: imported ${migrated.users} user(s), ${migrated.sessions} session(s), ` +

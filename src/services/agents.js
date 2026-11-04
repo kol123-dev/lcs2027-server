@@ -62,38 +62,59 @@ const toAgent = (a) => ({
   altPhone: a.altPhone,
   role: a.role,
   status: a.status,
+  stationCode: a.stationCode,
+  stationName: a.stationName,
   wardId: a.wardId,
   ward: a.ward?.name ?? null,
   constituency: a.ward?.constituency ?? null,
   createdAt: a.createdAt,
 });
 
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 200;
+
 /**
  * Live roster plus recruited-vs-target coverage.
  *
- * `role` / `ward` / `q` narrow the ROSTER only — the coverage summary always
- * reflects the whole county, so the headline numbers never change while
- * filtering the list.
+ * The filters (`role`, `ward`, `centre`, `station`, `q`) and the paging window
+ * narrow the ROSTER only — the coverage summary always reflects the whole
+ * county, so the headline numbers never move while the list is being filtered.
+ *
+ * `centre` matches the polling-centre name and `station` the exact IEBC stream
+ * code, i.e. the centre is the venue and the station is the stream inside it.
  */
-export async function agentRoster({ role, ward, q } = {}) {
+export async function agentRoster({ role, ward, centre, station, q, page, pageSize } = {}) {
+  const where = {};
+  if (role) where.role = String(role);
+  if (ward) where.wardId = String(ward);
+  if (centre) where.stationName = String(centre);
+  if (station) where.stationCode = String(station);
+  if (q) {
+    const needle = String(q);
+    where.OR = [
+      { fullName: { contains: needle } },
+      { idNumber: { contains: needle } },
+      { phone: { contains: needle } },
+      { stationName: { contains: needle } },
+    ];
+  }
+
+  const perPage = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || DEFAULT_PAGE_SIZE));
+
+  // Count first so the page window can be clamped: asking for a page past the
+  // end after a filter change returns the last real page instead of nothing.
+  const totalRows = await prisma.agent.count({ where });
+  const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
+  const currentPage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+
   const [grouped, rows, wardGroups] = await Promise.all([
     prisma.agent.groupBy({ by: ["role"], _count: { _all: true } }),
     prisma.agent.findMany({
-      where: {
-        ...(role ? { role } : {}),
-        ...(ward ? { wardId: ward } : {}),
-        ...(q
-          ? {
-              OR: [
-                { fullName: { contains: String(q) } },
-                { idNumber: { contains: String(q) } },
-                { phone: { contains: String(q) } },
-              ],
-            }
-          : {}),
-      },
+      where,
       include: { ward: { select: { name: true, constituency: true } } },
       orderBy: [{ role: "asc" }, { fullName: "asc" }],
+      skip: (currentPage - 1) * perPage,
+      take: perPage,
     }),
     prisma.agent.groupBy({ by: ["wardId", "role"], _count: { _all: true } }),
   ]);
@@ -151,6 +172,10 @@ export async function agentRoster({ role, ward, q } = {}) {
     coverageByRole,
     wards,
     roster: rows.map(toAgent),
+    page: currentPage,
+    pageSize: perPage,
+    totalRows,
+    totalPages,
   };
 }
 

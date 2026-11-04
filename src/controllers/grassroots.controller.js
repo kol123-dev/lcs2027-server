@@ -12,8 +12,8 @@ export function getStations(req, res) {
 
 export async function getAgents(req, res, next) {
   try {
-    const { role, ward, q } = req.query;
-    res.json(await agentRoster({ role, ward, q }));
+    const { role, ward, centre, station, q, page, pageSize } = req.query;
+    res.json(await agentRoster({ role, ward, centre, station, q, page, pageSize }));
   } catch (err) {
     next(err);
   }

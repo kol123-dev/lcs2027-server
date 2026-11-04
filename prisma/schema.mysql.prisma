@@ -157,25 +157,32 @@ model WardReadiness {
 // One row per recruited agent. Coverage is planned against the 757 polling
 // stations — 1 primary agent per station, plus backup and supervisor tiers who
 // each cover a block of stations (see src/services/agents.js for live targets).
-// Ward is the deployment unit; agents are deliberately NOT referenced to a
-// Station row because `db:seed` re-creates those rows and their ids can shift.
+//
+// The polling station is stored DENORMALISED (IEBC code + centre name) rather
+// than as a Station relation: `db:seed` deletes and re-creates every Station
+// row, so a foreign key would dangle after each seed. The code is stable in the
+// IEBC register, which is what makes it safe to persist.
 model Agent {
-  id        String   @id @default(cuid())
-  fullName  String
-  idNumber  String   @unique // national ID
-  gender    String // "male" | "female"
-  phone     String   @unique // 254XXXXXXXXX
-  altPhone  String? // alternative reachable line
-  role      String // "primary" | "backup" | "supervisor"
-  status    String   @default("active") // "active" | "inactive"
-  wardId    String?
-  ward      Ward?    @relation(fields: [wardId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  fullName    String
+  idNumber    String   @unique // national ID
+  gender      String // "male" | "female"
+  phone       String   @unique // 254XXXXXXXXX
+  altPhone    String? // alternative reachable line
+  role        String // "primary" | "backup" | "supervisor"
+  status      String   @default("active") // "active" | "inactive"
+  stationCode String? // IEBC stream code, e.g. "026136067905501"
+  stationName String? // polling centre / station name
+  wardId      String?
+  ward        Ward?    @relation(fields: [wardId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([wardId])
   @@index([role])
   @@index([status])
+  @@index([stationCode])
+  @@index([stationName])
 }
 
 // ---------------- Better Auth (username + password + roles) ----------------
