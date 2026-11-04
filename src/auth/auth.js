@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { username } from "better-auth/plugins";
+import { admin } from "better-auth/plugins/admin";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import env from "../config/env.js";
 import prisma from "../db.js";
@@ -47,14 +48,22 @@ export const auth = betterAuth({
       usernameNormalization: (u) => normalizePhone(u) || u.replace(/\D/g, "").slice(0, 13),
       usernameValidator: (u) => isValidKenyanMobile(u),
     }),
+    // Superadmin user management. `admin` is the only role that may create,
+    // edit, ban or delete users; every role below it stays untouched.
+    admin({
+      defaultRole: "agent",
+      adminRoles: ["admin"],
+    }),
   ],
 
-  // Hard-assert the "agent" starter role for every user created through the
-  // public flow regardless of any field tampering.
+  // Hard-assert the "agent" starter role for users created through the PUBLIC
+  // sign-up flow. An explicit role (set by a superadmin through the admin
+  // plugin, which bypasses `input: false`) is preserved. Better Auth hands the
+  // `create.before` hook the row data itself (not wrapped in `{ data }`).
   databaseHooks: {
     user: {
       create: {
-        before: async (user) => ({ data: { ...user.data, role: "agent" } }),
+        before: async (user) => ({ data: { ...user, role: user.role || "agent" } }),
       },
     },
   },

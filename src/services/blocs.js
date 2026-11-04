@@ -1,5 +1,6 @@
 import prisma from "../db.js";
 import context from "../data/context.js";
+import { serializeActivity, activityInclude } from "./roadmap.js";
 
 /**
  * Outreach — the live bloc register.
@@ -68,6 +69,9 @@ const toBloc = (b) => ({
   status: b.status,
   membersCaptured: b._count?.members ?? 0,
   members: (b.members ?? []).map(toMember),
+  // Roadmap rows tied to this bloc (e.g. its Mashamba meeting) — so the
+  // register surfaces the campaign calendar for each community group.
+  activities: (b.activities ?? []).map(serializeActivity),
   createdAt: b.createdAt,
 });
 
@@ -109,6 +113,7 @@ export async function blocRegister({ category, ward, q, page, pageSize } = {}) {
       include: {
         ward: { select: { name: true, constituency: true } },
         members: { orderBy: { fullName: "asc" } },
+        activities: { include: activityInclude, orderBy: [{ date: "asc" }, { title: "asc" }] },
         _count: { select: { members: true } },
       },
       orderBy: [{ category: "asc" }, { name: "asc" }],

@@ -66,6 +66,8 @@ model Ward {
   readiness    WardReadiness?
   agents       Agent[]
   blocs        Bloc[]
+  activities   CampaignActivity[]
+  projectBeneficiaries ProjectBeneficiary[]
 
   @@index([subCountyId])
   @@index([constituency])
@@ -218,6 +220,7 @@ model Bloc {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   members       BlocMember[]
+  activities    CampaignActivity[]
 
   @@index([category])
   @@index([wardId])
@@ -245,6 +248,122 @@ model BlocMember {
   @@index([phone])
 }
 
+// ---------------- Roadmap: dated campaign activities ----------------
+
+// One dated entry on the campaign roadmap — a Mashamba meeting, a ward tour
+// day, a harambee, a burial dispatch, a church blitz, a party/coalition
+// sitting, or a fixed key event (Christmas, Easter, Eid). Recurring work
+// (harambees, burials, church blitzes) is expanded to one row per occurrence
+// so the calendar and the "done vs planned" counters stay live.
+//
+// Links to the rest of the machine are DELIBERATE but loose: the ward/bloc
+// relations are real foreign keys (and the ward carries its sub-county, i.e.
+// the 2022 baseline geography), while the polling centre is stored
+// DENORMALISED (IEBC code + centre name) exactly like Bloc/Agent — `db:seed`
+// re-creates Centre/Station rows, so a foreign key would dangle after a seed.
+model CampaignActivity {
+  id          String    @id @default(cuid())
+  title       String
+  type        String // mashamba | ward-tour | team-tour | harambee | burial | party | church-blitz | key-event
+  category    String    @default("activity") // "activity" | "key-event"
+  description String?   @db.Text
+  cadence     String    @default("once") // "once" | "weekly" | "monthly"
+  date        DateTime // the day this occurrence is planned for
+  endDate     DateTime?
+  status      String    @default("planned") // "planned" | "active" | "done" | "cancelled"
+  location    String? // venue / settler-farm subdivision / church
+  subCountyId String?
+  wardId      String?
+  ward        Ward?     @relation(fields: [wardId], references: [id])
+  blocId      String?
+  bloc        Bloc?     @relation(fields: [blocId], references: [id])
+  stationCode String? // IEBC code of the venue centre, when fixed
+  stationName String?
+  owner       String? // team / lead responsible
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([type])
+  @@index([category])
+  @@index([date])
+  @@index([wardId])
+  @@index([subCountyId])
+  @@index([blocId])
+  @@index([stationCode])
+  @@index([status])
+}
+
+// ---------------- Projects, initiatives & achievements ----------------
+
+// One programme / initiative / achievement delivered on the ground (Tents &
+// Chairs, Scholarships, Pad-a-Girl, Jenga Nyumba, Anti-Jigger…). `slug` is the
+// stable public identifier used in /projects URLs; `category` groups the
+// programmes into the families the campaign talks about (Economic
+// Empowerment, Education, Dignity & Inclusion, Infrastructure, Employment,
+// Faith & Community, Sports & Youth).
+//
+// `unit` labels what a single beneficiary record issues (a mattress, a packet
+// of pads, a KSh disbursement) so the register totals read in real units.
+model Project {
+  id            String   @id @default(cuid())
+  slug          String   @unique // "scholarships"
+  name          String // "Scholarships & Bursaries"
+  category      String // family id, e.g. "education"
+  summary       String?  @db.Text // one-line description for the directory card
+  description   String?  @db.Text // fuller narrative
+  unit          String   @default("beneficiary") // what one record issues
+  metric        String   @default("count") // "count" | "amount" — headline metric
+  detailFields  String   @default(dbgenerated("('[]')")) @db.Text // JSON: [{key,label}] programme-specific extra fields
+  status        String   @default("active") // "active" | "planned" | "completed"
+  startDate     DateTime?
+  order         Int      @default(0)
+  beneficiaries ProjectBeneficiary[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([status])
+  @@index([order])
+}
+
+// One beneficiary sheet under a programme — a student, a household, a women's
+// group, a school, a place of worship or a team. The core columns are the ones
+// every programme needs (beneficiary, guardian, ward/village, nearby polling
+// centre, phone, quantity/amount); programme-specific extras (jersey size,
+// ID number, recruitment entity, machinery model…) live in `details` as JSON.
+//
+// The polling centre is stored DENORMALISED (IEBC code + centre name) exactly
+// like Bloc/Agent/CampaignActivity — `db:seed` re-creates Centre/Station rows,
+// so a foreign key would dangle after a seed.
+model ProjectBeneficiary {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String // beneficiary / student / group name
+  parentName  String? // parent / guardian / group official
+  phone       String? // active phone of the contact person
+  wardId      String?
+  ward        Ward?     @relation(fields: [wardId], references: [id])
+  village     String?
+  stationCode String? // IEBC code of the nearby polling centre
+  stationName String?
+  quantity    Int? // items / packets / people
+  amount      Float? // KSh disbursed
+  dateIssued  DateTime?
+  status      String    @default("issued") // "issued" | "pending"
+  details     String    @default(dbgenerated("('{}')")) @db.Text // JSON: programme-specific extras
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([wardId])
+  @@index([stationCode])
+  @@index([name])
+  @@index([status])
+}
+
 // ---------------- Better Auth (username + password + roles) ----------------
 
 model user {
@@ -260,6 +379,10 @@ model user {
   // additional fields, server-managed
   role          String?
   subCounty     String?
+  // better-auth admin plugin: account suspension (superadmin can ban/unban)
+  banned        Boolean   @default(false)
+  banReason     String?   @db.Text
+  banExpires    DateTime?
   sessions      session[]
   accounts      account[]
 }
@@ -272,6 +395,8 @@ model session {
   updatedAt DateTime @updatedAt
   ipAddress String?
   userAgent String?  @db.Text
+  // better-auth admin plugin: set when a superadmin impersonates a user
+  impersonatedBy String?
   userId    String
   user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

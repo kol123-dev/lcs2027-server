@@ -7,13 +7,14 @@ import { requireRole } from "../middleware/auth.js";
 import { getMe } from "../controllers/me.controller.js";
 import baselineRoutes from "./baseline.routes.js";
 import wardsRoutes from "./wards.routes.js";
-import achievementsRoutes from "./achievements.routes.js";
+import projectsRoutes from "./projects.routes.js";
 import roadmapRoutes from "./roadmap.routes.js";
 import grassrootsRoutes from "./grassroots.routes.js";
 import outreachRoutes from "./outreach.routes.js";
 import strategyRoutes from "./strategy.routes.js";
 import searchRoutes from "./search.routes.js";
 import centresRoutes from "./centres.routes.js";
+import adminRoutes from "./admin.routes.js";
 
 const router = Router();
 
@@ -49,12 +50,14 @@ router.use(requireRole([]));
 
 router.use("/baseline", baselineRoutes);
 router.use("/wards", wardsRoutes);
-router.use("/achievements", achievementsRoutes);
+router.use("/projects", projectsRoutes);
 router.use("/roadmap", roadmapRoutes);
 router.use("/field", grassrootsRoutes);
 router.use("/outreach", outreachRoutes);
 router.use("/strategy", strategyRoutes);
 router.use("/search", searchRoutes);
 router.use("/centres", centresRoutes);
+// Superadmin console — admin role only (guarded again inside the router).
+router.use("/admin", adminRoutes);
 
 export default router;

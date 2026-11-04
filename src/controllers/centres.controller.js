@@ -1,6 +1,7 @@
 import prisma from "../db.js";
 import context from "../data/context.js";
 import { auditEvent } from "../auth/audit.js";
+import { listActivities } from "../services/roadmap.js";
 
 /**
  * Polling-centre content ledger.
@@ -46,6 +47,9 @@ export async function getCentre(req, res, next) {
     if (!centre) {
       return res.status(404).json({ error: "Centre not found", code: "NOT_FOUND" });
     }
+    // Roadmap rows for this centre's ward — the campaign calendar the centre
+    // team works to (Mashamba meetings, church blitzes, blocs nearby…).
+    const activities = await listActivities({ ward: centre.wardId });
     res.json({
       centre: {
         id: centre.id,
@@ -58,6 +62,7 @@ export async function getCentre(req, res, next) {
         valid: centre.valid,
         keyAchievements: Array.isArray(JSON.parse(centre.keyAchievements || "[]")) ? JSON.parse(centre.keyAchievements || "[]") : [],
         campaignMessage: centre.campaignMessage || "",
+        activities,
       },
     });
   } catch (err) {
