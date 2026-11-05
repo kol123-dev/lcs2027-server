@@ -51,7 +51,7 @@ function statusMeta(level) {
   return map[level] ?? map.Marginal;
 }
 
-function wardResult(ward, projections, { deliveries, issues } = {}) {
+function wardResult(ward, projections, { deliveries, beneficiaries, issues } = {}) {
   const cat = classifyArea(ward);
   const p = projections[ward.id];
   const opp = wardOpponentNumber(ward);
@@ -90,6 +90,9 @@ function wardResult(ward, projections, { deliveries, issues } = {}) {
       : null,
     // Live deliveries (projects register) and live issues — no static lists.
     deliveries: deliveries ?? rollupProgrammes([], { limit: 4 }),
+    // The individual delivery rows behind that roll-up, so the search card can
+    // expand a programme into its beneficiary snapshot.
+    beneficiaries: beneficiaries ?? [],
     issues: issues ?? [],
     issueSummary: summariseIssues(issues ?? []),
   };
@@ -192,6 +195,7 @@ export async function search(req, res, next) {
       const data = wardData.get(w.id);
       return wardResult(w, projections, {
         deliveries: data ? rollupProgrammes(data.rows, { limit: 4 }) : null,
+        beneficiaries: data?.rows ?? [],
         issues: data?.issues ?? [],
       });
     });
