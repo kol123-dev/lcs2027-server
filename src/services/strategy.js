@@ -13,8 +13,8 @@ import context from "../data/context.js";
 // are read off the 2022 valid vote. First match wins:
 //   share >= 55% AND gap >= 20pts  ->  Stronghold (safe base)
 //   gap < 10pts (either way)       ->  Marginal   (true battleground)
-//   share < 40%                    ->  Opposition (hostile / low-yield)
-//   else                           ->  Lean       (secure, but can slip)
+//   share < 40% AND trailing       ->  Opposition (hostile / low-yield)
+//   else                           ->  Lean       (ahead, but can slip)
 export const CATEGORY_ORDER = ["stronghold", "lean", "marginal", "oppositionBastion"];
 
 export const CATEGORY_META = {
@@ -124,7 +124,7 @@ export function classifyArea(area) {
   const gap = safetyGap(area);
   if (share >= 0.55 && gap >= 0.2) return "stronghold";
   if (Math.abs(gap) < 0.1) return "marginal";
-  if (share < 0.4) return "oppositionBastion";
+  if (share < 0.4 && gap < 0) return "oppositionBastion";
   return "lean";
 }
 
