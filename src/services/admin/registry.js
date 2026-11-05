@@ -27,7 +27,7 @@ export const ADMIN_GROUPS = [
 ];
 
 /** Local option sets — the values the rest of the app stores in these columns. */
-const WARD_STATUS = ["Stronghold", "Lean Siyoi", "True Swing", "Marginal", "Opposition Bastion"];
+const WARD_STATUS = ["Stronghold", "Marginal", "Opposition"];
 const CENTRE_STATUS = ["Stronghold", "Marginal", "Opposition"];
 const ACTIVITY_TYPES = ["mashamba", "ward-tour", "team-tour", "harambee", "burial", "party", "church-blitz", "key-event"];
 const ACTIVITY_CATEGORY = ["activity", "key-event"];
@@ -115,6 +115,7 @@ export const RESOURCES = [
       { key: "subCountyId", label: "Parent record", ref: "subcounties" },
       { key: "registered", label: "Registered", align: "right", mono: true },
       { key: "siyoi", label: "Siyoi 2022", align: "right", mono: true },
+      { key: "targetOverride", label: "2027 target", align: "right", mono: true },
       { key: "status", label: "Sticker" },
     ],
     fields: [
@@ -134,6 +135,7 @@ export const RESOURCES = [
       { name: "leader", label: "Ward leader", type: "text", section: "Campaign" },
       { name: "status", label: "Officials' sticker", type: "select", options: opts(WARD_STATUS), section: "Campaign" },
       { name: "siyoiShare", label: "Siyoi share", type: "float", section: "Campaign" },
+      { name: "targetOverride", label: "2027 target override", type: "int", min: 0, section: "2027 target", help: "Admin-set 2027 target in votes. Leave blank to use the model's derived target." },
       { name: "candidates", label: "Candidates (JSON)", type: "json", jsonShape: "object", section: "Raw data" },
     ],
   },
@@ -192,6 +194,7 @@ export const RESOURCES = [
       { key: "status", label: "Status" },
       { key: "registered", label: "Registered", align: "right", mono: true },
       { key: "siyoi", label: "Siyoi 2022", align: "right", mono: true },
+      { key: "targetOverride", label: "2027 target", align: "right", mono: true },
     ],
     fields: [
       { name: "id", label: "ID", type: "int", readonly: true, section: "Identity" },
@@ -207,6 +210,7 @@ export const RESOURCES = [
       { name: "valid", label: "Valid votes", type: "int", required: true, min: 0, section: "2022 baseline" },
       { name: "status", label: "Status", type: "select", options: opts(CENTRE_STATUS), required: true, section: "Campaign" },
       { name: "statusOfficial", label: "Status is official", type: "bool", section: "Campaign" },
+      { name: "targetOverride", label: "2027 target override", type: "int", min: 0, section: "2027 target", help: "Admin-set 2027 target in votes. Leave blank to inherit the ward's target." },
       { name: "campaignMessage", label: "Campaign message", type: "textarea", section: "Campaign" },
       { name: "keyAchievements", label: "Key achievements (JSON array)", type: "json", jsonShape: "array", section: "Campaign" },
       { name: "candidates", label: "Candidates (JSON)", type: "json", jsonShape: "object", section: "Raw data" },

@@ -86,6 +86,10 @@ export async function getWard(req, res, next) {
           const key = nameKey(c.name);
           const centreDeliveries = deliveriesByCentre.get(key) ?? [];
           const centreIssues = issuesByCentre.get(key) ?? [];
+          // A centre with no manual target inherits its share of the ward target,
+          // weighted by its share of the ward register.
+          const wardTarget = projection?.targetVotes ?? 0;
+          const derivedCentreTarget = Math.round(wardTarget * ((c.registered || 0) / (ward.registered || 1)));
           return {
             id: c.id,
             name: c.name,
@@ -102,6 +106,9 @@ export async function getWard(req, res, next) {
             turnout2022: c.turnout2022,
             turnout2022Pct: Math.round((c.turnout2022 || 0) * 1000) / 10,
             campaignMessage: c.campaignMessage || "",
+            targetOverride: c.targetOverride ?? null,
+            derivedTarget: derivedCentreTarget,
+            target2027: c.targetOverride ?? derivedCentreTarget,
             deliveryCount: centreDeliveries.length,
             deliveries: centreDeliveries,
             issues: centreIssues,
@@ -118,6 +125,8 @@ export async function getWard(req, res, next) {
             share22: projection.share22,
             share27: projection.share27,
             target2027: projection.targetVotes,
+            derivedTarget: projection.derivedTarget,
+            targetOverride: projection.targetOverride,
             delta: projection.delta,
             category: projection.category,
           }

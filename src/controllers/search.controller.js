@@ -45,7 +45,7 @@ function statusMeta(level) {
   const map = {
     Stronghold: { status: "stronghold", label: "Stronghold", color: "#22d3ee" },
     Marginal: { status: "marginal", label: "Marginal", color: "#f5c518" },
-    Opposition: { status: "oppositionBastion", label: "Opposition Bastion", color: "#fb7185" },
+    Opposition: { status: "oppositionBastion", label: "Opposition", color: "#fb7185" },
   };
   return map[level] ?? map.Marginal;
 }
@@ -60,7 +60,7 @@ function wardResult(ward, projections, { deliveries, issues } = {}) {
     name: ward.name,
     constituency: ward.constituency,
     wardCode: ward.wardCode,
-    status: statusMeta(ward.status ?? (ward.siyoiShare >= 0.55 ? "Stronghold" : ward.siyoiShare >= 0.45 ? "Marginal" : "Opposition")),
+    status: statusMeta(ward.status ?? (ward.siyoiShare >= 0.55 ? "Stronghold" : ward.siyoiShare >= 0.4 ? "Marginal" : "Opposition")),
     strategy: { category: cat, categoryLabel: CATEGORY_META[cat].label, focus: CATEGORY_META[cat].focus },
     performance2022: {
       registered: ward.registered,
@@ -205,7 +205,7 @@ export async function search(req, res, next) {
           type: "subCounty",
           id: sc.id,
           name: sc.name,
-          status: statusMeta(sc.siyoiShare >= 0.55 ? "Stronghold" : sc.siyoiShare >= 0.45 ? "Marginal" : "Opposition"),
+          status: statusMeta(sc.siyoiShare >= 0.55 ? "Stronghold" : sc.siyoiShare >= 0.4 ? "Marginal" : "Opposition"),
           performance2022: {
             registered: sc.registered,
             valid: sc.valid,

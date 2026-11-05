@@ -47,6 +47,7 @@ function buildContext(raw) {
       constituency: w.constituency,
       wardCode: w.wardCode,
       status: w.status,
+      targetOverride: w.targetOverride ?? null,
       candidates: w.candidates,
       registered: w.registered,
       siyoi: w.siyoi,

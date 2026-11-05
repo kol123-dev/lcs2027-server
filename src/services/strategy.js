@@ -8,12 +8,16 @@ import context from "../data/context.js";
  * /api/strategy/assumptions so the campaign team can pressure-test them.
  */
 
-const CATEGORY_ORDER = ["stronghold", "leanSiyoi", "swing", "marginal", "oppositionBastion"];
+// One simple rule everywhere: Siyoi's 2022 share of the valid vote.
+//   >= 55%  ->  Stronghold
+//   >= 40%  ->  Marginal
+//   else    ->  Opposition
+const CATEGORY_ORDER = ["stronghold", "marginal", "oppositionBastion"];
 
 export const CATEGORY_META = {
   stronghold: {
     label: "Stronghold",
-    blurb: "Unmatched 2022 dominance — defend and deliver on time.",
+    blurb: "Siyoi took 55%+ of the valid vote in 2022 — defend and deliver on time.",
     focus: [
       "Protect the vote bank: thank-you tours, sustained ward presence.",
       "Deliver on campaign promises early; bank gratitude before August.",
@@ -21,39 +25,19 @@ export const CATEGORY_META = {
       "Mobilise women & youth networks to hold share.",
     ],
   },
-  leanSiyoi: {
-    label: "Lean Siyoi",
-    blurb: "Won in 2022 but by a thin margin — upgrade to a stronghold.",
+  marginal: {
+    label: "Marginal",
+    blurb: "40–55% in 2022 — winnable with a targeted push; the conversion battleground.",
     focus: [
-      "Targeted delivery wins (bursaries, water, market sheds) on top-3 issues.",
+      "Targeted delivery wins (bursaries, water, market sheds) on the top-3 issues.",
+      "House-to-house canvass with issue scorecards; land local champions.",
       "Raise mobiliser density vs 2022; recruit station captains early.",
-      "Radio + church circuit personal outreach.",
-      "Track defection risk via polling-centre dashboards.",
-    ],
-  },
-  swing: {
-    label: "True Swing",
-    blurb: "Marginal battles that decide the seat — win the conversion war.",
-    focus: [
-      "Issue appeals to undecideds: cost of living, ECDE, women's enterprise.",
-      "House-to-house canvass with issue scorecards.",
-      "Register every new woman voter; escort to the centres.",
       "GOTV exclusives: target 58%+ turnout in these wards.",
     ],
   },
-  marginal: {
-    label: "Marginal (Lost 2022)",
-    blurb: "Lost narrowly — one strong push can flip them.",
-    focus: [
-      "Visibility blitz: ward development record fairs.",
-      "Land local champions and respected church elders.",
-      "Bursary + enterprise fund roll-out in the ward.",
-      "Exploit the opposition split; win their defectors.",
-    ],
-  },
   oppositionBastion: {
-    label: "Opposition Bastion",
-    blurb: "Opponent's home turf — contain damage and split the base.",
+    label: "Opposition",
+    blurb: "Below 40% in 2022 — contain damage, split the base, contest selectively.",
     focus: [
       "Damage-limitation: keep the margin tight, do not over-invest.",
       "Court defectors and intra-party malcontents.",
@@ -74,14 +58,12 @@ export const ASSUMPTIONS = {
   },
   turnout: {
     baseWard: 0.55,
-    gotvUplift: 0.03, // extra in swing/marginal/opposition wards
+    gotvUplift: 0.03, // extra in marginal/opposition wards
     ceiling: 0.68,
   },
   shareShiftByCategory: {
     stronghold: 0.0,
-    leanSiyoi: 0.025,
-    swing: 0.05,
-    marginal: 0.085,
+    marginal: 0.06,
     oppositionBastion: 0.1,
   },
   // In 2027 the 2022 runner-up's bloc partially erodes; Siyoi's
@@ -107,12 +89,9 @@ export function wardOpponentNumber(ward) {
 }
 
 export function classifyWard(ward) {
-  const margin = ward.siyoi - wardOpponentNumber(ward);
-  const share = ward.valid ? ward.siyoi / ward.valid : 0;
-  if (margin >= 2000 || share >= 0.55) return "stronghold";
-  if (margin >= 700) return "leanSiyoi";
-  if (margin >= -500) return "swing";
-  if (margin >= -1000) return "marginal";
+  const share = ward.valid ? ward.siyoi / ward.valid : ward.siyoiShare ?? 0;
+  if (share >= 0.55) return "stronghold";
+  if (share >= 0.4) return "marginal";
   return "oppositionBastion";
 }
 
@@ -120,7 +99,7 @@ function projectWard(ward, scenario) {
   const category = classifyWard(ward);
   const roll = ASSUMPTIONS.rollGrowthBySubCounty[ward.constituency] ?? 0.06;
   const reg27 = round(ward.registered * (1 + roll));
-  const isGotv = ["swing", "marginal", "oppositionBastion"].includes(category);
+  const isGotv = ["marginal", "oppositionBastion"].includes(category);
   const turnout27 = clamp(
     ASSUMPTIONS.turnout.baseWard + (isGotv ? ASSUMPTIONS.turnout.gotvUplift : 0) + scenario.turnoutBump,
     0.35,
@@ -128,13 +107,19 @@ function projectWard(ward, scenario) {
   );
   const share22 = ward.valid ? ward.siyoi / ward.valid : 0;
   const share27 = clamp(share22 + ASSUMPTIONS.shareShiftByCategory[category], 0.3, 0.8);
-  const targetVotes = round(reg27 * turnout27 * share27);
+  const derivedTarget = round(reg27 * turnout27 * share27);
+  // An admin-set override replaces the model in the Target scenario only —
+  // Conservative/Stretch stay model-driven so the stress tests stay honest.
+  const override = Number.isFinite(ward.targetOverride) ? ward.targetOverride : null;
+  const targetVotes = scenario.id === "target" && override !== null ? override : derivedTarget;
   return {
     category,
     reg27,
     turnout27,
     share22,
     share27,
+    derivedTarget,
+    targetOverride: override,
     targetVotes,
     delta: targetVotes - ward.siyoi,
   };

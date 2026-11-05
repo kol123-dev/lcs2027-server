@@ -54,6 +54,7 @@ model Ward {
   margin       Int
   siyoiShare   Float?
   status       String? // officials' sticker: Stronghold | Marginal | Opposition
+  targetOverride Int? // admin-set 2027 target; blank = use the model's derived target
   candidates   String  @default("{}") // JSON: candidateKey -> votes
   subCountyId  String
   subCounty    SubCounty   @relation(fields: [subCountyId], references: [id])
@@ -111,6 +112,7 @@ model Centre {
   valid          Int
   status         String // Stronghold | Marginal | Opposition
   statusOfficial Boolean
+  targetOverride Int? // admin-set 2027 target; blank = apportioned from the ward target
   candidates     String  @default("{}") // JSON: candidateKey -> votes
   sortOrder      Int     @default(0)
   // Per-centre campaign content — written by staff via PATCH /api/centres/:id.

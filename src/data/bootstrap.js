@@ -118,6 +118,7 @@ const toWard = (w, stations) => ({
   margin: w.margin,
   siyoiShare: w.siyoiShare,
   status: w.status,
+  targetOverride: w.targetOverride ?? null,
   stationCount: stations.length,
   stations,
 });
@@ -135,6 +136,7 @@ const toCentre = (c) => ({
   valid: c.valid,
   status: c.status,
   statusOfficial: c.statusOfficial,
+  targetOverride: c.targetOverride ?? null,
   wardId: c.wardId,
   // Per-centre content fields (JSON string in DB, array/string in the store).
   keyAchievements: Array.isArray(parseJson(c.keyAchievements)) ? parseJson(c.keyAchievements) : [],
