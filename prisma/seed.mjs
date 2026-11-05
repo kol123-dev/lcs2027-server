@@ -11,6 +11,7 @@ import prisma from "../src/db.js";
 import seedCampaign from "./seed-data.mjs";
 import migrateLegacyAuth from "../src/data/legacy-auth.mjs";
 import { seedAgents } from "./seed-agents.mjs";
+import { seedCoordinators } from "./seed-coordinators.mjs";
 import { seedBlocs } from "./seed-blocs.mjs";
 import { seedRoadmap } from "./seed-roadmap.mjs";
 import { seedProjects } from "./seed-projects.mjs";
@@ -18,6 +19,7 @@ import { seedProjects } from "./seed-projects.mjs";
 const counts = await seedCampaign(prisma);
 const migrated = await migrateLegacyAuth(prisma);
 const agents = await seedAgents(prisma);
+const coordinators = await seedCoordinators(prisma);
 const blocs = await seedBlocs(prisma);
 const roadmap = await seedRoadmap(prisma);
 const projects = await seedProjects(prisma);
@@ -30,6 +32,11 @@ console.log(
   `[db] field ops: ${agents.created} agent(s) seeded` +
     (agents.existing ? `, ${agents.existing} already on file` : "") +
     (agents.backfilled ? `, ${agents.backfilled} posted to polling stations` : "")
+);
+console.log(
+  `[db] field ops: ${coordinators.created} co-ordinator(s) seeded` +
+    (coordinators.existing ? `, ${coordinators.existing} already on file` : "") +
+    (coordinators.skipped ? " (no ward on file — skipped)" : "")
 );
 console.log(
   `[db] outreach: ${blocs.created} bloc(s) seeded` +

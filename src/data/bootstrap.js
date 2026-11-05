@@ -1,6 +1,7 @@
 import prisma from "../db.js";
 import seedCampaign from "../../prisma/seed-data.mjs";
 import seedAgents from "../../prisma/seed-agents.mjs";
+import seedCoordinators from "../../prisma/seed-coordinators.mjs";
 import seedBlocs from "../../prisma/seed-blocs.mjs";
 import migrateLegacyAuth from "./legacy-auth.mjs";
 import { initReadinessFromDb } from "./readiness.js";
@@ -46,6 +47,15 @@ export async function ensureDatabase() {
     process.stdout.write(
       // eslint-disable-next-line no-console
       `[db] posted ${agents.backfilled} field-ops agent(s) to polling stations\n`
+    );
+  }
+  // Insert-only: a non-empty co-ordinator register is left untouched, so
+  // appointed area leads are never clobbered by a boot-time top-up.
+  const coordinators = await seedCoordinators(prisma);
+  if (coordinators.created > 0) {
+    process.stdout.write(
+      // eslint-disable-next-line no-console
+      `[db] seeded ${coordinators.created} area co-ordinator(s)\n`
     );
   }
   // Insert-only: an existing bloc register is left untouched, so real outreach

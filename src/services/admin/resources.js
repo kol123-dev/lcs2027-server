@@ -27,6 +27,7 @@ const EXACT_FILTERS = [
   "status",
   "type",
   "role",
+  "areaType",
   "gender",
   "constituency",
   "wardCode",

@@ -1,5 +1,6 @@
 import { network, updateReadiness, stationsIndex } from "../services/grassroots.js";
 import { agentRoster } from "../services/agents.js";
+import { coordinatorRoster } from "../services/coordinators.js";
 
 export function getNetwork(_req, res) {
   res.json(network());
@@ -14,6 +15,15 @@ export async function getAgents(req, res, next) {
   try {
     const { role, ward, centre, station, q, page, pageSize } = req.query;
     res.json(await agentRoster({ role, ward, centre, station, q, page, pageSize }));
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getCoordinators(req, res, next) {
+  try {
+    const { areaType, ward, subCounty, q, page, pageSize } = req.query;
+    res.json(await coordinatorRoster({ areaType, ward, subCounty, q, page, pageSize }));
   } catch (err) {
     next(err);
   }

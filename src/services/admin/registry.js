@@ -16,12 +16,13 @@
 
 import { PROJECT_CATEGORIES, BENEFICIARY_STATUS, PROJECT_STATUS } from "../projects.js";
 import { ISSUE_CATEGORIES, ISSUE_SEVERITY, ISSUE_STATUS } from "../issues.js";
+import { COORDINATOR_AREAS, AREA_LABELS } from "../coordinators.js";
 
 export const ADMIN_GROUPS = [
   { id: "geography", label: "Geography & 2022 Baseline", blurb: "Sub-counties, wards, polling stations, centres and candidates." },
   { id: "projects", label: "Projects & Deliveries", blurb: "Programmes and the beneficiary sheets issued under them." },
   { id: "roadmap", label: "Roadmap", blurb: "Dated campaign activities across the county." },
-  { id: "field", label: "Field Operations", blurb: "Recruited polling agents and ward readiness records." },
+  { id: "field", label: "Field Operations", blurb: "Recruited polling agents, area co-ordinators and ward readiness records." },
   { id: "outreach", label: "Outreach", blurb: "Community blocs and their captured members." },
   { id: "issues", label: "Issues", blurb: "Live problems raised in wards, at blocs and at polling centres." },
 ];
@@ -34,7 +35,7 @@ const ACTIVITY_CATEGORY = ["activity", "key-event"];
 const CADENCE = ["once", "weekly", "monthly"];
 const ACTIVITY_STATUS = ["planned", "active", "done", "cancelled"];
 const AGENT_ROLES = ["primary", "backup", "supervisor"];
-const AGENT_STATUS = ["active", "inactive"];
+const ACTIVE_STATUS = ["active", "inactive"];
 const BLOC_CATEGORIES = ["farm", "business"];
 const BLOC_STATUS = ["active", "dormant"];
 const GENDERS = ["male", "female"];
@@ -408,10 +409,53 @@ export const RESOURCES = [
       { name: "phone", label: "Phone", type: "text", required: true, section: "Identity", help: "254XXXXXXXXX" },
       { name: "altPhone", label: "Alternative phone", type: "text", section: "Identity" },
       { name: "role", label: "Role", type: "select", required: true, options: opts(AGENT_ROLES), section: "Deployment" },
-      { name: "status", label: "Status", type: "select", required: true, options: opts(AGENT_STATUS), section: "Deployment" },
+      { name: "status", label: "Status", type: "select", required: true, options: opts(ACTIVE_STATUS), section: "Deployment" },
       { name: "wardId", label: "Ward", type: "relation", relation: REL.ward, section: "Deployment" },
       { name: "stationCode", label: "Station code", type: "text", section: "Deployment" },
       { name: "stationName", label: "Station name", type: "text", section: "Deployment" },
+    ],
+  },
+  {
+    key: "coordinators",
+    model: "coordinator",
+    group: "field",
+    label: "Co-ordinators",
+    singular: "Co-ordinator",
+    titleField: "fullName",
+    keyField: "id",
+    keyType: "string",
+    keyGenerated: true,
+    searchFields: ["fullName", "idNumber", "phone", "village"],
+    defaultSort: { field: "fullName", dir: "asc" },
+    include: { ward: { select: { name: true } }, subCounty: { select: { name: true } } },
+    columns: [
+      { key: "fullName", label: "Co-ordinator" },
+      { key: "areaType", label: "Level" },
+      { key: "wardId", label: "Ward", ref: "wards" },
+      { key: "subCountyId", label: "Sub-county", ref: "subcounties" },
+      { key: "village", label: "Village" },
+      { key: "phone", label: "Phone", mono: true },
+      { key: "status", label: "Status" },
+    ],
+    fields: [
+      { name: "fullName", label: "Full name", type: "text", required: true, section: "Identity" },
+      { name: "idNumber", label: "National ID", type: "text", required: true, section: "Identity" },
+      { name: "gender", label: "Gender", type: "select", required: true, options: opts(GENDERS), section: "Identity" },
+      { name: "phone", label: "Phone", type: "text", required: true, section: "Identity", help: "254XXXXXXXXX" },
+      { name: "altPhone", label: "Alternative phone", type: "text", section: "Identity" },
+      {
+        name: "areaType",
+        label: "Area level",
+        type: "select",
+        required: true,
+        options: COORDINATOR_AREAS.map((a) => ({ value: a, label: AREA_LABELS[a] })),
+        section: "Area",
+        help: "What this co-ordinator owns: a whole sub-county, one ward, or a village",
+      },
+      { name: "subCountyId", label: "Sub-county", type: "relation", relation: REL.subCounty, section: "Area", help: "Fill when the level is Sub-county" },
+      { name: "wardId", label: "Ward", type: "relation", relation: REL.ward, section: "Area", help: "Fill for Ward and Village level" },
+      { name: "village", label: "Village", type: "text", section: "Area", help: "Village name when the level is Village" },
+      { name: "status", label: "Status", type: "select", required: true, options: opts(ACTIVE_STATUS), section: "Deployment" },
     ],
   },
   {

@@ -40,6 +40,7 @@ model SubCounty {
   siyoiShare Float?
   candidates String   @default(dbgenerated("('{}')")) @db.Text // JSON: candidateKey -> votes
   wards      Ward[]
+  coordinators Coordinator[]
 }
 
 model Ward {
@@ -66,6 +67,7 @@ model Ward {
   centres      Centre[]
   readiness    WardReadiness?
   agents       Agent[]
+  coordinators Coordinator[]
   blocs        Bloc[]
   activities   CampaignActivity[]
   projectBeneficiaries ProjectBeneficiary[]
@@ -189,6 +191,38 @@ model Agent {
   @@index([status])
   @@index([stationCode])
   @@index([stationName])
+}
+
+// One row per recruited co-ordinator — the layer between HQ and the polling
+// agents. Each co-ordinator owns exactly one named area, declared by
+// `areaType`: a whole sub-county, a ward, or a village inside a ward. The
+// sub-county/ward links are real foreign keys (a village row keeps both, so the
+// village always resolves up to its ward); the village NAME is free text
+// because villages are not held as their own table.
+//
+// The plan is 5 sub-county + 25 ward = 30 posts (see
+// src/services/coordinators.js), derived from the live geography.
+model Coordinator {
+  id          String   @id @default(cuid())
+  fullName    String
+  idNumber    String   @unique // national ID
+  gender      String // "male" | "female"
+  phone       String   @unique // 254XXXXXXXXX
+  altPhone    String? // alternative reachable line
+  areaType    String // "subCounty" | "ward" | "village"
+  status      String   @default("active") // "active" | "inactive"
+  subCountyId String?
+  subCounty   SubCounty? @relation(fields: [subCountyId], references: [id])
+  wardId      String?
+  ward        Ward?     @relation(fields: [wardId], references: [id])
+  village     String? // village name, when areaType = "village"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([areaType])
+  @@index([subCountyId])
+  @@index([wardId])
+  @@index([status])
 }
 
 // ---------------- Outreach: demographic blocs ----------------
