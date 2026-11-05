@@ -1,5 +1,5 @@
 import context from "../data/context.js";
-import { classifyWard, ASSUMPTIONS } from "./strategy.js";
+import { classifyArea, ASSUMPTIONS } from "./strategy.js";
 import { getReadiness, persistReadiness } from "../data/readiness.js";
 import { COVERAGE, coverageTargets, allocate } from "./agents.js";
 
@@ -33,7 +33,7 @@ export function network() {
     wardId: w.id,
     ward: w.name,
     constituency: w.constituency,
-    category: classifyWard(w),
+    category: classifyArea(w),
     registered: w.registered,
     turnout2022: w.turnout2022,
     stations: stationCounts[i],

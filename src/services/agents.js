@@ -1,6 +1,6 @@
 import prisma from "../db.js";
 import context from "../data/context.js";
-import { classifyWard } from "./strategy.js";
+import { classifyArea } from "./strategy.js";
 
 /**
  * Field Ops — polling-agent roster and coverage planning.
@@ -158,7 +158,7 @@ export async function agentRoster({ role, ward, centre, station, q, page, pageSi
       wardId: w.id,
       ward: w.name,
       constituency: w.constituency,
-      category: classifyWard(w),
+      category: classifyArea(w),
       stations: stationCounts[i],
       targets: wardTargets,
       recruited: { ...c, total: c.primary + c.backup + c.supervisor },
