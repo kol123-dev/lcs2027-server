@@ -4,6 +4,7 @@ import { auditEvent } from "../auth/audit.js";
 import { listActivities } from "../services/roadmap.js";
 import { deliveriesForStation } from "../services/projects.js";
 import { issuesForWard, nameKey, splitWardIssues, summariseIssues } from "../services/issues.js";
+import { CATEGORY_META, classifyArea, safetyGap } from "../services/strategy.js";
 
 /**
  * Polling-centre content ledger.
@@ -53,6 +54,12 @@ const centreTallies = (c) => {
   };
 };
 
+/** The 4-tier classification + safety gap for a centre, from its 2022 tallies. */
+const centreClassification = (t) => {
+  const cat = classifyArea(t);
+  return { category: cat, categoryLabel: CATEGORY_META[cat].label, marginPct: safetyGap(t) };
+};
+
 /** Light centre index for browsing / picking a centre (future admin UI). */
 export async function listCentres(req, res, next) {
   try {
@@ -95,6 +102,7 @@ export async function listCentres(req, res, next) {
           wardId: c.wardId,
           wardCode: c.wardCode,
           status: c.status,
+          ...centreClassification(t),
           registered: c.registered,
           cast: c.cast ?? 0,
           valid: t.valid,
@@ -148,6 +156,7 @@ export async function getCentre(req, res, next) {
         wardCode: centre.wardCode,
         status: centre.status,
         statusOfficial: centre.statusOfficial,
+        ...centreClassification(tallies),
         registered: centre.registered,
         cast: centre.cast ?? 0,
         rejected: centre.rejected ?? 0,

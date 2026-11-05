@@ -28,8 +28,8 @@ export const ADMIN_GROUPS = [
 ];
 
 /** Local option sets — the values the rest of the app stores in these columns. */
-const WARD_STATUS = ["Stronghold", "Marginal", "Opposition"];
-const CENTRE_STATUS = ["Stronghold", "Marginal", "Opposition"];
+const WARD_STATUS = ["Stronghold", "Lean", "Marginal", "Opposition"];
+const CENTRE_STATUS = ["Stronghold", "Lean", "Marginal", "Opposition"];
 const ACTIVITY_TYPES = ["mashamba", "ward-tour", "team-tour", "harambee", "burial", "party", "church-blitz", "key-event"];
 const ACTIVITY_CATEGORY = ["activity", "key-event"];
 const CADENCE = ["once", "weekly", "monthly"];

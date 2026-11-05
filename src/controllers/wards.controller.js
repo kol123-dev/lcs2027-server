@@ -1,4 +1,4 @@
-import { CATEGORY_META, classifyWard, project2027, wardOpponent, wardOpponentNumber } from "../services/strategy.js";
+import { CATEGORY_META, classifyArea, project2027, safetyGap, wardOpponent, wardOpponentNumber } from "../services/strategy.js";
 import context from "../data/context.js";
 import { listActivities } from "../services/roadmap.js";
 import { beneficiariesForWard, deliverySummaryForWard } from "../services/projects.js";
@@ -7,7 +7,7 @@ import { issuesForWard, nameKey, summariseIssues } from "../services/issues.js";
 export function listWards(req, res) {
   const { constituency, category, q } = req.query;
   const rows = context.wards.map((w) => {
-    const cat = classifyWard(w);
+    const cat = classifyArea(w);
     return {
       id: w.id,
       name: w.name,
@@ -20,6 +20,7 @@ export function listWards(req, res) {
       nakhumicha: w.nakhumicha,
       valid: w.valid,
       margin: w.margin,
+      marginPct: safetyGap(w),
       leader: w.leader,
       siyoiShare: w.siyoiShare,
       turnout2022: w.turnout2022,
@@ -39,7 +40,7 @@ export async function getWard(req, res, next) {
   try {
     const ward = context.wardsById[req.params.id];
     if (!ward) return res.status(404).json({ error: "Ward not found" });
-    const cat = classifyWard(ward);
+    const cat = classifyArea(ward);
     const projection = project2027().wardProjections.find((w) => w.id === ward.id)?.projection;
     // Roadmap rows for this ward (Mashamba meetings, ward tour, bloc events…).
     const activities = await listActivities({ ward: ward.id });
@@ -90,6 +91,7 @@ export async function getWard(req, res, next) {
           // weighted by its share of the ward register.
           const wardTarget = projection?.targetVotes ?? 0;
           const derivedCentreTarget = Math.round(wardTarget * ((c.registered || 0) / (ward.registered || 1)));
+          const centreCat = classifyArea(c);
           return {
             id: c.id,
             name: c.name,
@@ -100,6 +102,9 @@ export async function getWard(req, res, next) {
             nakhumicha: c.nakhumicha,
             valid: c.valid,
             margin: (c.siyoi ?? 0) - (c.khatundi ?? 0),
+            marginPct: safetyGap(c),
+            category: centreCat,
+            categoryLabel: CATEGORY_META[centreCat].label,
             status: c.status,
             statusOfficial: c.statusOfficial,
             siyoiShare: c.siyoiShare,

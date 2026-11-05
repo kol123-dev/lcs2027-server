@@ -8,16 +8,19 @@ import context from "../data/context.js";
  * /api/strategy/assumptions so the campaign team can pressure-test them.
  */
 
-// One simple rule everywhere: Siyoi's 2022 share of the valid vote.
-//   >= 55%  ->  Stronghold
-//   >= 40%  ->  Marginal
-//   else    ->  Opposition
-const CATEGORY_ORDER = ["stronghold", "marginal", "oppositionBastion"];
+// Two metrics combined, not just raw share: how much Siyoi commands (absolute
+// share) AND how far clear she is of the closest rival (the safety gap). Both
+// are read off the 2022 valid vote. First match wins:
+//   share >= 55% AND gap >= 20pts  ->  Stronghold (safe base)
+//   gap < 10pts (either way)       ->  Marginal   (true battleground)
+//   share < 40%                    ->  Opposition (hostile / low-yield)
+//   else                           ->  Lean       (secure, but can slip)
+export const CATEGORY_ORDER = ["stronghold", "lean", "marginal", "oppositionBastion"];
 
 export const CATEGORY_META = {
   stronghold: {
     label: "Stronghold",
-    blurb: "Siyoi took 55%+ of the valid vote in 2022 — defend and deliver on time.",
+    blurb: "55%+ share with a 20pt+ lead in 2022 — safe base, minimal deployment.",
     focus: [
       "Protect the vote bank: thank-you tours, sustained ward presence.",
       "Deliver on campaign promises early; bank gratitude before August.",
@@ -25,19 +28,29 @@ export const CATEGORY_META = {
       "Mobilise women & youth networks to hold share.",
     ],
   },
+  lean: {
+    label: "Lean",
+    blurb: "Secure lead, but not beyond reach — apathy is the real opponent here.",
+    focus: [
+      "Hold the lead: keep visible presence and service delivery steady.",
+      "Guard against apathy — turnout, not persuasion, decides these wards.",
+      "Thank-you tours and local champions; no complacency in the base.",
+      "Track the gap monthly; escalate to a battleground plan if it closes.",
+    ],
+  },
   marginal: {
     label: "Marginal",
-    blurb: "40–55% in 2022 — winnable with a targeted push; the conversion battleground.",
+    blurb: "Inside a 10pt gap — the true battleground; priority for people, money and time.",
     focus: [
+      "Pour resources in: this is where the election is actually won.",
       "Targeted delivery wins (bursaries, water, market sheds) on the top-3 issues.",
       "House-to-house canvass with issue scorecards; land local champions.",
       "Raise mobiliser density vs 2022; recruit station captains early.",
-      "GOTV exclusives: target 58%+ turnout in these wards.",
     ],
   },
   oppositionBastion: {
     label: "Opposition",
-    blurb: "Below 40% in 2022 — contain damage, split the base, contest selectively.",
+    blurb: "Below 40% share and trailing — hostile or low-yield; persuade selectively.",
     focus: [
       "Damage-limitation: keep the margin tight, do not over-invest.",
       "Court defectors and intra-party malcontents.",
@@ -58,11 +71,12 @@ export const ASSUMPTIONS = {
   },
   turnout: {
     baseWard: 0.55,
-    gotvUplift: 0.03, // extra in marginal/opposition wards
+    gotvUplift: 0.03, // extra where turnout is the risk (lean/marginal/opposition)
     ceiling: 0.68,
   },
   shareShiftByCategory: {
     stronghold: 0.0,
+    lean: 0.03,
     marginal: 0.06,
     oppositionBastion: 0.1,
   },
@@ -88,18 +102,37 @@ export function wardOpponentNumber(ward) {
   return Math.max(ward.khatundi, ward.nakhumicha);
 }
 
-export function classifyWard(ward) {
-  const share = ward.valid ? ward.siyoi / ward.valid : ward.siyoiShare ?? 0;
-  if (share >= 0.55) return "stronghold";
-  if (share >= 0.4) return "marginal";
-  return "oppositionBastion";
+/**
+ * The safety gap: Siyoi's share minus the closest rival's share (percentage
+ * points, as a fraction). Positive means she led the race in 2022.
+ */
+export function safetyGap(area) {
+  const valid = area.valid || area.siyoi + area.khatundi + area.nakhumicha || 0;
+  if (!valid) return 0;
+  return area.siyoi / valid - wardOpponentNumber(area) / valid;
+}
+
+/**
+ * The 4-tier classification, applied to any area carrying 2022 tallies
+ * (ward, polling centre or sub-county). Reads BOTH metrics — absolute share
+ * and the gap to the closest rival — so a comfortable lead at a modest share
+ * is not mistaken for an opposition stronghold.
+ */
+export function classifyArea(area) {
+  const valid = area.valid || area.siyoi + area.khatundi + area.nakhumicha || 0;
+  const share = valid ? area.siyoi / valid : 0;
+  const gap = safetyGap(area);
+  if (share >= 0.55 && gap >= 0.2) return "stronghold";
+  if (Math.abs(gap) < 0.1) return "marginal";
+  if (share < 0.4) return "oppositionBastion";
+  return "lean";
 }
 
 function projectWard(ward, scenario) {
-  const category = classifyWard(ward);
+  const category = classifyArea(ward);
   const roll = ASSUMPTIONS.rollGrowthBySubCounty[ward.constituency] ?? 0.06;
   const reg27 = round(ward.registered * (1 + roll));
-  const isGotv = ["marginal", "oppositionBastion"].includes(category);
+  const isGotv = ["lean", "marginal", "oppositionBastion"].includes(category);
   const turnout27 = clamp(
     ASSUMPTIONS.turnout.baseWard + (isGotv ? ASSUMPTIONS.turnout.gotvUplift : 0) + scenario.turnoutBump,
     0.35,
@@ -237,4 +270,4 @@ export function turnoutMap() {
   });
 }
 
-export default { baseline, project2027, turnoutMap, classifyWard, CATEGORY_META, ASSUMPTIONS, context };
+export default { baseline, project2027, turnoutMap, classifyArea, safetyGap, CATEGORY_META, ASSUMPTIONS, context };
