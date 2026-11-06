@@ -110,19 +110,69 @@ function normaliseExtraField(f) {
   };
 }
 
+/** A stored `ProjectField` row as the sheet shape `resolveSheet` reads. */
+const fieldRow = (r) => ({
+  key: r.key,
+  label: r.label,
+  type: r.type,
+  hidden: r.hidden === true,
+  required: r.required === true,
+  help: r.help ?? undefined,
+  options: parseJson(r.options, []),
+});
+
 /**
- * Turn a programme's stored `detailFields` into the sheet the app renders.
+ * Authored definitions -> storable `ProjectField` rows, in list order. The
+ * seed, the sync script and the backfill all write the same shape, so a sheet
+ * declared in code and one edited in the console are indistinguishable.
+ */
+export const fieldRowsFromDefs = (defs = []) =>
+  (Array.isArray(defs) ? defs : [])
+    .filter((f) => f && typeof f.key === "string" && f.key.trim())
+    .map((f, i) => ({
+      key: f.key.trim(),
+      label: typeof f.label === "string" && f.label.trim() ? f.label.trim() : f.key.trim(),
+      type: SHEET_EXTRA_TYPES.includes(f.type) ? f.type : "text",
+      options: JSON.stringify(Array.isArray(f.options) ? f.options : []),
+      required: f.required === true,
+      hidden: f.hidden === true,
+      help: typeof f.help === "string" && f.help.trim() ? f.help.trim() : null,
+      order: i,
+    }));
+
+/**
+ * A programme's sheet shape.
+ *
+ * `fields` is the source of truth — the console edits those rows, so a
+ * programme's columns are data, not a JSON blob. A programme that predates the
+ * table still carries its shape in `detailFields`, which is read until the
+ * backfill has run for it.
+ */
+export function sheetFields(project) {
+  if (Array.isArray(project?.fields) && project.fields.length) {
+    return project.fields.map(fieldRow);
+  }
+  return parseFields(project?.detailFields);
+}
+
+export const sheetOf = (project) => resolveSheet(sheetFields(project));
+
+/**
+ * Turn a programme's declared fields into the sheet the app renders.
  *
  * One list expresses both ideas: an entry whose `key` is a shared field name
  * relabels it (or hides it, with `hidden: true`), while any other key declares
  * a new typed extra column. Splitting them here means the beneficiary form,
  * the console and the spreadsheet importer all read one resolved shape.
+ *
+ * Accepts either the field rows or the legacy JSON text.
  */
 export function resolveSheet(rawFields) {
   const overrides = new Map();
   const extras = [];
 
-  for (const f of parseFields(rawFields)) {
+  const list = Array.isArray(rawFields) ? rawFields : parseFields(rawFields);
+  for (const f of list) {
     if (BASE_FIELD_KEYS.has(f.key)) {
       overrides.set(f.key, f);
       continue;
@@ -235,8 +285,8 @@ const toProject = (p, agg) => ({
   description: p.description,
   unit: p.unit,
   metric: p.metric,
-  detailFields: parseFields(p.detailFields),
-  sheet: resolveSheet(p.detailFields),
+  fields: (p.fields ?? []).map(fieldRow),
+  sheet: sheetOf(p),
   status: p.status,
   startDate: p.startDate,
   order: p.order,
@@ -284,7 +334,10 @@ export async function projectDirectory({ category, q, status } = {}) {
   const [rows, allBeneficiaries, projectCount] = await Promise.all([
     prisma.project.findMany({
       where,
-      include: { beneficiaries: { select: { quantity: true, amount: true, status: true } } },
+      include: {
+        beneficiaries: { select: { quantity: true, amount: true, status: true } },
+        fields: { orderBy: { order: "asc" } },
+      },
       orderBy: [{ order: "asc" }, { name: "asc" }],
     }),
     // Register-wide figures — deliberately unfiltered so the summary is stable.
@@ -336,7 +389,10 @@ export async function projectDirectory({ category, q, status } = {}) {
  * totals. The filters (`ward`, `status`, `q`) narrow the REGISTER only.
  */
 export async function projectDetail(slug, { ward, status, q, page, pageSize } = {}) {
-  const project = await prisma.project.findUnique({ where: { slug: String(slug) } });
+  const project = await prisma.project.findUnique({
+    where: { slug: String(slug) },
+    include: { fields: { orderBy: { order: "asc" } } },
+  });
   if (!project) return null;
 
   const where = { projectId: project.id };
@@ -479,10 +535,13 @@ export function buildBeneficiary(payload = {}, { partial = false, extras = [] } 
 
 /** Record a new beneficiary sheet against a programme. */
 export async function createBeneficiary(slug, payload) {
-  const project = await prisma.project.findUnique({ where: { slug: String(slug) } });
+  const project = await prisma.project.findUnique({
+    where: { slug: String(slug) },
+    include: { fields: { orderBy: { order: "asc" } } },
+  });
   if (!project) return { error: "Programme not found", code: "NOT_FOUND" };
 
-  const { extras } = resolveSheet(project.detailFields);
+  const { extras } = sheetOf(project);
   const { data, error, code } = buildBeneficiary(payload, { extras });
   if (error) return { error, code };
   data.projectId = project.id;
@@ -498,11 +557,11 @@ export async function createBeneficiary(slug, payload) {
 export async function updateBeneficiary(id, payload) {
   const existing = await prisma.projectBeneficiary.findUnique({
     where: { id: String(id) },
-    include: { project: { select: { detailFields: true } } },
+    include: { project: { include: { fields: { orderBy: { order: "asc" } } } } },
   });
   if (!existing) return { error: "Beneficiary not found", code: "NOT_FOUND" };
 
-  const { extras } = resolveSheet(existing.project?.detailFields);
+  const { extras } = sheetOf(existing.project);
   const { data, error, code } = buildBeneficiary(payload, { partial: true, extras });
   if (error) return { error, code };
   if (Object.keys(data).length === 0) return { error: "Nothing to update", code: "BAD_REQUEST" };
@@ -638,6 +697,9 @@ export default {
   SHEET_BASE_FIELDS,
   SHEET_EXTRA_TYPES,
   resolveSheet,
+  sheetOf,
+  sheetFields,
+  fieldRowsFromDefs,
   projectDirectory,
   projectDetail,
   createBeneficiary,

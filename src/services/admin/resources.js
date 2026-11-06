@@ -103,16 +103,17 @@ export async function listResource(resource, query = {}) {
     take: pageSize,
   });
 
-  return { rows, page, pageSize, totalRows, totalPages };
+  return { rows: rows.map((row) => shapeRow(resource, row)), page, pageSize, totalRows, totalPages };
 }
 
 export async function getResourceRow(resource, key) {
   const id = normalizeKey(resource, key);
   if (id === null) return null;
-  return prisma[resource.model].findUnique({
+  const row = await prisma[resource.model].findUnique({
     where: { [resource.keyField]: id },
     include: resource.include,
   });
+  return shapeRow(resource, row);
 }
 
 /**
@@ -139,6 +140,94 @@ async function resolveCompanions(resource, data) {
   }
 }
 
+/**
+ * A child list (a programme's sheet fields) is edited as list beside the form,
+ * so the wire shape differs from the stored row: a `list` field travels as a
+ * comma-separated string and is stored as a JSON array.
+ */
+const isList = (field) => field.list === true;
+
+/** Stored child row -> the shape the console's field editor edits. */
+function childEditable(child, row) {
+  const out = {};
+  for (const f of child.fields) {
+    const v = row[f.name];
+    if (isList(f)) out[f.name] = Array.isArray(v) ? v.join(", ") : String(v ?? "");
+    else if (f.type === "bool") out[f.name] = v === true;
+    else out[f.name] = v ?? null;
+  }
+  return out;
+}
+
+/** Editor value -> stored value. */
+const childStorable = (child, data) => {
+  const out = { ...data };
+  for (const f of child.fields) {
+    if (!isList(f) || !Object.prototype.hasOwnProperty.call(out, f.name)) continue;
+    const parts = String(out[f.name] ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    out[f.name] = JSON.stringify(parts);
+  }
+  return out;
+};
+
+/** Every child list on a row, in the editor's shape. */
+function shapeRow(resource, row) {
+  if (!row || !resource.children?.length) return row;
+  const out = { ...row };
+  for (const child of resource.children) {
+    if (Array.isArray(out[child.name])) out[child.name] = out[child.name].map((r) => childEditable(child, r));
+  }
+  return out;
+}
+
+/** Validate one child list from the payload. */
+function readChildRows(child, raw) {
+  const rows = [];
+  const errors = [];
+  const list = Array.isArray(raw) ? raw : [];
+  const noun = child.singular ?? child.name;
+
+  list.forEach((item, i) => {
+    const { data, errors: fieldErrors } = coerceFields(child.fields, item ?? {}, { partial: false });
+    if (fieldErrors.length) {
+      errors.push(...fieldErrors.map((e) => `${noun} ${i + 1}: ${e}`));
+      return;
+    }
+    rows.push(childStorable(child, data));
+  });
+
+  // Keys address the stored values, so two rows may not declare the same one.
+  const seen = new Set();
+  for (const row of rows) {
+    const key = String(row.key ?? "").trim().toLowerCase();
+    if (seen.has(key)) errors.push(`${noun} key “${row.key}” is declared twice`);
+    seen.add(key);
+  }
+  return { rows, errors };
+}
+
+/**
+ * Nested writes for every child list the payload carries. A list that is not
+ * supplied is left untouched; one that is, is rewritten whole — the child rows
+ * have no other referents (values are addressed by `key`), so replacing them
+ * keeps ordering trivial.
+ */
+function childWrites(resource, payload, { replace }) {
+  const nested = {};
+  const errors = [];
+  for (const child of resource.children ?? []) {
+    if (!Object.prototype.hasOwnProperty.call(payload, child.name)) continue;
+    const { rows, errors: listErrors } = readChildRows(child, payload[child.name]);
+    errors.push(...listErrors);
+    const create = rows.map((row, i) => ({ ...row, order: i }));
+    nested[child.name] = replace ? { deleteMany: {}, create } : { create };
+  }
+  return { nested, errors };
+}
+
 export async function createResource(resource, payload = {}) {
   const { data, errors } = coerceFields(resource.fields, payload, { partial: false });
 
@@ -150,11 +239,16 @@ export async function createResource(resource, payload = {}) {
     else data[resource.keyField] = key;
   }
 
-  if (errors.length) return { errors };
+  const { nested, errors: childErrors } = childWrites(resource, payload, { replace: false });
+
+  if (errors.length || childErrors.length) return { errors: [...errors, ...childErrors] };
   await resolveCompanions(resource, data);
   try {
-    const row = await prisma[resource.model].create({ data, include: resource.include });
-    return { row };
+    const row = await prisma[resource.model].create({
+      data: { ...data, ...nested },
+      include: resource.include,
+    });
+    return { row: shapeRow(resource, row) };
   } catch (err) {
     return { errors: [prismaMessage(err)] };
   }
@@ -168,17 +262,19 @@ export async function updateResource(resource, key, payload = {}) {
   if (!existing) return { notFound: true };
 
   const { data, errors } = coerceFields(resource.fields, payload, { partial: true });
-  if (errors.length) return { errors };
-  if (Object.keys(data).length === 0) return { errors: ["Nothing to update"] };
+  const { nested, errors: childErrors } = childWrites(resource, payload, { replace: true });
+
+  if (errors.length || childErrors.length) return { errors: [...errors, ...childErrors] };
+  if (Object.keys(data).length === 0 && Object.keys(nested).length === 0) return { errors: ["Nothing to update"] };
 
   await resolveCompanions(resource, data);
   try {
     const row = await prisma[resource.model].update({
       where: { [resource.keyField]: id },
-      data,
+      data: { ...data, ...nested },
       include: resource.include,
     });
-    return { row };
+    return { row: shapeRow(resource, row) };
   } catch (err) {
     return { errors: [prismaMessage(err)] };
   }

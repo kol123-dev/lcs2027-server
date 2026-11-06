@@ -9,12 +9,16 @@
  * Field `type`s map to `coerce.js`:
  *   text | textarea | int | float | bool | date | json | select | relation
  *
+ * A resource may also declare `children` — a list of rows it owns (a
+ * programme's sheet fields). The console edits them as a list beside the form
+ * and the engine rewrites that child table on save.
+ *
  * `readonly` fields are shown but never written (primary keys, derived or
  * server-managed columns). `relation` fields point at another resource and are
  * rendered as a select whose options come from `/api/admin/meta` lookups.
  */
 
-import { PROJECT_CATEGORIES, BENEFICIARY_STATUS, PROJECT_STATUS } from "../projects.js";
+import { PROJECT_CATEGORIES, BENEFICIARY_STATUS, PROJECT_STATUS, SHEET_EXTRA_TYPES, SHEET_BASE_FIELDS } from "../projects.js";
 import { ISSUE_CATEGORIES, ISSUE_SEVERITY, ISSUE_STATUS } from "../issues.js";
 import { COORDINATOR_AREAS, AREA_LABELS } from "../coordinators.js";
 
@@ -279,13 +283,30 @@ export const RESOURCES = [
       { name: "startDate", label: "Start date", type: "date", section: "Identity" },
       { name: "summary", label: "Summary", type: "textarea", section: "Narrative" },
       { name: "description", label: "Description", type: "textarea", section: "Narrative" },
+    ],
+    include: { fields: { orderBy: { order: "asc" } } },
+    /**
+     * The programme's sheet shape, as editable rows. A row whose key is a
+     * shared sheet field relabels that column (or hides it); any other key adds
+     * a typed column of the programme's own.
+     */
+    children: [
       {
-        name: "detailFields",
-        label: "Sheet fields (JSON array of {key,label,type,…})",
-        type: "json",
-        jsonShape: "array",
-        section: "Sheet shape",
-        help: "A shared field name (name, parentName, phone, wardId…) relabels or hides that column; any other key adds a typed extra: {key,label,type,options?,required?,help?} with type text|textarea|select|number|date.",
+        name: "fields",
+        label: "Sheet fields",
+        singular: "Field",
+        blurb:
+          "The columns this programme's beneficiary sheet and Excel template carry. A shared column name (name, parentName, phone, wardId, village, stationCode, quantity, amount, dateIssued, status, notes) relabels or hides that column; any other key adds a new one.",
+        sharedKeys: SHEET_BASE_FIELDS.map((f) => f.key),
+        fields: [
+          { name: "label", label: "Label", type: "text", required: true },
+          { name: "key", label: "Key", type: "text", required: true, help: "the column's stored name, e.g. institution" },
+          { name: "type", label: "Type", type: "select", required: true, options: opts(SHEET_EXTRA_TYPES) },
+          { name: "options", label: "Choices", type: "text", list: true, help: "Comma-separated — used by the Select type" },
+          { name: "required", label: "Required", type: "bool" },
+          { name: "hidden", label: "Hide column", type: "bool", help: "shared columns only" },
+          { name: "help", label: "Hint", type: "text" },
+        ],
       },
     ],
   },
@@ -636,6 +657,7 @@ export function publicResource(r) {
     keyGenerated: r.keyGenerated,
     columns: r.columns,
     fields: r.fields,
+    children: r.children,
     defaultSort: r.defaultSort,
   };
 }

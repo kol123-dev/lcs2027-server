@@ -3,9 +3,9 @@
  *
  * `seedProjects` is insert-only by design, so it never clobbers captured
  * delivery data — which also means a programme created earlier keeps whatever
- * `detailFields` sheet shape it was created with, even after the shape in
- * `seed-projects.mjs` changes. This script closes that gap: it matches
- * programmes by `slug` and updates the definition columns only.
+ * sheet shape it was created with, even after the shape in `seed-projects.mjs`
+ * changes. This script closes that gap: it matches programmes by `slug` and
+ * updates the definition columns and the programme's `ProjectField` rows.
  *
  * Beneficiaries are NEVER touched.
  *
@@ -13,6 +13,7 @@
  *   node prisma/sync-project-sheets.mjs --dry-run  # report only
  */
 import prisma from "../src/db.js";
+import { fieldRowsFromDefs } from "../src/services/projects.js";
 import { PROGRAMMES } from "./seed-projects.mjs";
 
 const dryRun = process.argv.includes("--dry-run");
@@ -26,8 +27,13 @@ const definitionOf = (p, order) => ({
   unit: p.unit,
   metric: p.metric,
   order,
-  detailFields: JSON.stringify(p.detailFields ?? []),
 });
+
+/** Canonical text for a stored field row, so shapes can be compared. */
+const rowShape = (r) =>
+  [r.key, r.label, r.type, r.options, r.required === true, r.hidden === true, r.help ?? "", r.order].join("|");
+
+const shapeOf = (rows) => rows.map(rowShape).sort().join("\n");
 
 const rows = await prisma.project.findMany({
   select: {
@@ -40,7 +46,7 @@ const rows = await prisma.project.findMany({
     unit: true,
     metric: true,
     order: true,
-    detailFields: true,
+    fields: { orderBy: { order: "asc" } },
   },
 });
 const bySlug = new Map(rows.map((r) => [r.slug, r]));
@@ -55,12 +61,21 @@ for (let i = 0; i < PROGRAMMES.length; i++) {
 
   const want = definitionOf(p, i + 1);
   const changed = Object.keys(want).filter((k) => (row[k] ?? null) !== want[k]);
-  if (!changed.length) {
+
+  const wantFields = fieldRowsFromDefs(p.detailFields);
+  const shapeChanged = shapeOf(wantFields) !== shapeOf(row.fields);
+
+  if (!changed.length && !shapeChanged) {
     current.push(p.slug);
     continue;
   }
-  if (!dryRun) await prisma.project.update({ where: { id: row.id }, data: want });
-  updated.push({ slug: p.slug, changed });
+  if (!dryRun) {
+    await prisma.project.update({
+      where: { id: row.id },
+      data: { ...want, fields: { deleteMany: {}, create: wantFields } },
+    });
+  }
+  updated.push({ slug: p.slug, changed: [...changed, ...(shapeChanged ? ["fields"] : [])] });
 }
 
 const missing = PROGRAMMES.filter((p) => !bySlug.has(p.slug)).map((p) => p.slug);
@@ -72,5 +87,6 @@ for (const u of updated) console.log(`  ~ ${u.slug}  (${u.changed.join(", ")})`)
 if (missing.length) console.log(`  not on file (run db:seed to create): ${missing.join(", ")}`);
 
 console.log(`beneficiaries on file (untouched): ${await prisma.projectBeneficiary.count()}`);
+console.log(`sheet field rows on file: ${await prisma.projectField.count()}`);
 
 await prisma.$disconnect();

@@ -4,7 +4,9 @@
  * The 19 delivery programmes below are the ones the campaign actually runs on
  * the ground. Each carries its own sheet shape (`detailFields`), so a
  * scholarship records an institution + term while a tool-of-trade record
- * records a trade + the tool issued — one table, many sheets.
+ * records a trade + the tool issued — one table, many sheets. That shape is
+ * written as `ProjectField` rows, the same table the console's field builder
+ * edits.
  *
  * Seeding is insert-only: programmes and beneficiaries are added only when the
  * directory is empty, so re-running `db:seed` never clobbers genuinely
@@ -16,6 +18,8 @@
  * centre on each row are resolved from the LIVE register, so the geography is
  * genuine even though the names are placeholders.
  */
+
+import { fieldRowsFromDefs } from "../src/services/projects.js";
 
 const PROGRAMMES = [
   {
@@ -513,7 +517,9 @@ export async function seedProjects(prisma) {
         description: p.description,
         unit: p.unit,
         metric: p.metric,
-        detailFields: JSON.stringify(p.detailFields ?? []),
+        // The sheet shape lives in ProjectField rows — the same table the
+        // console's field builder edits.
+        fields: { create: fieldRowsFromDefs(p.detailFields) },
         status: "active",
         startDate: isoDate(0),
         order: pi + 1,

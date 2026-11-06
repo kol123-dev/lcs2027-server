@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import prisma from "../../db.js";
 import context from "../../data/context.js";
-import { createBeneficiary, buildBeneficiary, resolveSheet, BENEFICIARY_STATUS } from "../projects.js";
+import { createBeneficiary, buildBeneficiary, sheetOf, BENEFICIARY_STATUS } from "../projects.js";
 
 /**
  * Spreadsheet import for one programme's delivery register.
@@ -211,10 +211,13 @@ function styleHeader(row) {
  * the register, so the dropdown is always current).
  */
 export async function buildProjectTemplate(slug) {
-  const project = await prisma.project.findUnique({ where: { slug: String(slug ?? "") } });
+  const project = await prisma.project.findUnique({
+    where: { slug: String(slug ?? "") },
+    include: { fields: { orderBy: { order: "asc" } } },
+  });
   if (!project) return { error: `No programme with slug "${slug}"`, code: "NO_PROGRAMME" };
 
-  const sheet = resolveSheet(project.detailFields);
+  const sheet = sheetOf(project);
   const columns = columnsFor(sheet);
 
   const lists = {
@@ -428,7 +431,10 @@ function beneficiaryPayload(row, extras, issues, rowNumber) {
  * @param dryRun  validate and report without writing anything
  */
 export async function importProjectWorkbook(buffer, { slug, dryRun = false } = {}) {
-  const project = await prisma.project.findUnique({ where: { slug: String(slug ?? "") } });
+  const project = await prisma.project.findUnique({
+    where: { slug: String(slug ?? "") },
+    include: { fields: { orderBy: { order: "asc" } } },
+  });
   if (!project) {
     return { error: `No programme with slug "${slug}" — choose an existing programme to import into`, code: "NO_PROGRAMME" };
   }
@@ -440,7 +446,7 @@ export async function importProjectWorkbook(buffer, { slug, dryRun = false } = {
     return { error: "That file could not be read as an .xlsx workbook", code: "BAD_WORKBOOK" };
   }
 
-  const sheet = resolveSheet(project.detailFields);
+  const sheet = sheetOf(project);
   const columns = columnsFor(sheet);
   const parsed = readSheet(wb, DATA_SHEET, columns);
 
