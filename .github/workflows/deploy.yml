@@ -94,6 +94,13 @@ jobs:
             # No tracked migration files; push keeps the schema aligned.
             npx prisma db push --schema prisma/schema.mysql.prisma --accept-data-loss
 
+            echo "==> Backfilling programme sheet fields..."
+            # Programmes seeded before the `ProjectField` table carry their
+            # sheet shape as legacy `detailFields` JSON. Lift them onto the
+            # table so the console's field builder opens populated. Idempotent,
+            # and non-fatal: the runtime falls back to the JSON either way.
+            node prisma/backfill-project-fields.mjs || echo "    WARNING: backfill failed - sheets still resolve from detailFields."
+
             echo "==> (Re)starting PM2 process..."
             # Fresh DB seeds itself on first boot from data/2022-results.json.
             pm2 reload "$APP_NAME" --update-env || pm2 start ecosystem.config.cjs

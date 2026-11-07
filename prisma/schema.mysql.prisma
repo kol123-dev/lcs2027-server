@@ -352,16 +352,42 @@ model Project {
   description   String?  @db.Text // fuller narrative
   unit          String   @default("beneficiary") // what one record issues
   metric        String   @default("count") // "count" | "amount" — headline metric
-  detailFields  String   @default(dbgenerated("('[]')")) @db.Text // JSON: [{key,label,type,options?,required?,hidden?}] — a shared field name relabels/hides that column, any other key adds a typed extra field
+  detailFields  String   @default(dbgenerated("('[]')")) @db.Text // LEGACY JSON sheet shape — superseded by the `fields` table
   status        String   @default("active") // "active" | "planned" | "completed"
   startDate     DateTime?
   order         Int      @default(0)
+  fields        ProjectField[]
   beneficiaries ProjectBeneficiary[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([category])
   @@index([status])
+  @@index([order])
+}
+
+// One declared sheet field on a programme — the programme's own shape, as rows
+// rather than a JSON blob, so the console can add, reorder and edit them
+// directly. A row whose `key` is a shared sheet field (name, phone, wardId,
+// notes…) RELABELS that column — or hides it, when `hidden` — while any other
+// key declares a typed extra column of its own.
+model ProjectField {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  key       String
+  label     String
+  type      String   @default("text") // text | textarea | select | number | date
+  options   String   @default(dbgenerated("('[]')")) @db.Text // JSON array of choices (select only)
+  required  Boolean  @default(false)
+  hidden    Boolean  @default(false) // shared-field override: drop that column
+  help      String?  @db.Text
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, key])
+  @@index([projectId])
   @@index([order])
 }
 
