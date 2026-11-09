@@ -345,7 +345,7 @@ export const RESOURCES = [
     fields: [
       { name: "projectId", label: "Programme", type: "relation", relation: REL.project, required: true, section: "Identity" },
       { name: "name", label: "Beneficiary / group", type: "text", required: true, section: "Identity" },
-      { name: "parentName", label: "Parent / guardian", type: "text", section: "Identity" },
+      { name: "parentName", label: "Parent / guardian / Contact", type: "text", section: "Identity" },
       { name: "phone", label: "Active phone", type: "text", section: "Identity", help: "07xx / 2547xx / +2547xx" },
       { name: "wardId", label: "Ward", type: "relation", relation: REL.ward, section: "Location" },
       { name: "village", label: "Village", type: "text", section: "Location" },

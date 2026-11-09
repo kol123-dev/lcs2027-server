@@ -67,7 +67,7 @@ const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
  */
 export const SHEET_BASE_FIELDS = [
   { key: "name", label: "Name of beneficiary / group", type: "text", required: true },
-  { key: "parentName", label: "Parent / guardian", type: "text" },
+  { key: "parentName", label: "Parent / guardian / Contact", type: "text" },
   { key: "phone", label: "Active phone number", type: "tel" },
   { key: "wardId", label: "Ward", type: "ward" },
   { key: "village", label: "Village", type: "text" },
