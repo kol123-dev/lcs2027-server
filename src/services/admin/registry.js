@@ -61,6 +61,16 @@ const REL = {
     scopeField: "wardId",
     labelSuffixField: "code",
   },
+  // A polling CENTRE is the campaign's own reconciled site — 371 of them, with
+  // no IEBC code of its own, so the name is the option value and what a sheet
+  // records. The station list above is the raw 757-row IEBC feed (same sites,
+  // duplicated tallies) and must not be used to pick a centre.
+  centre: {
+    resource: "centres",
+    valueField: "name",
+    labelField: "name",
+    scopeField: "wardId",
+  },
 };
 
 export const RESOURCES = [
@@ -340,13 +350,13 @@ export const RESOURCES = [
       { name: "wardId", label: "Ward", type: "relation", relation: REL.ward, section: "Location" },
       { name: "village", label: "Village", type: "text", section: "Location" },
       {
-        name: "stationCode",
+        // The picker lists the ward's polling CENTRES. A centre has no IEBC
+        // code, so its name is stored; a legacy `stationCode` on older rows is
+        // left alone by this form.
+        name: "stationName",
         label: "Polling centre",
         type: "relation",
-        relation: REL.station,
-        // The sheet keeps the centre's code and name in two columns; picking a
-        // centre here fills both (`resources.js` resolves the mirror column).
-        companion: "stationName",
+        relation: REL.centre,
         section: "Location",
         help: "Choose a ward to narrow the list",
       },

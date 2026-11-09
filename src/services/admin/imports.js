@@ -64,12 +64,11 @@ for (const w of context.wards) {
   wardIdByName.set(norm(w.wardCode), w.id);
 }
 
-/** Match typed polling-centre text against the ward's own station list. */
-function matchStation(wardId, text) {
-  const stations = wardId ? context.wardsById[wardId]?.stations ?? [] : [];
+/** Match typed polling-centre text against the ward's own centre list. */
+function matchCentre(wardId, text) {
   const needle = norm(text);
-  if (!needle) return null;
-  return stations.find((s) => norm(s.code) === needle || norm(s.name) === needle) ?? null;
+  if (!needle || !wardId) return null;
+  return context.centres.find((c) => c.wardId === wardId && norm(c.name) === needle) ?? null;
 }
 
 // ------------------------------------------------------------------ columns
@@ -397,15 +396,14 @@ function beneficiaryPayload(row, extras, issues, rowNumber) {
   }
   payload.wardId = wardId;
 
-  // The polling centre may be typed as an IEBC code or a name — either way it is
-  // resolved against the chosen ward's own list, and an unmatched entry is kept
-  // as free text rather than dropped.
+  // The polling centre is typed as a name and resolved against the chosen
+  // ward's own centre list, so it is always a real site; an unmatched entry is
+  // kept as free text rather than dropped.
   const centre = asText(row.stationCode);
   if (centre) {
-    const station = matchStation(wardId, centre);
-    if (station) {
-      payload.stationCode = station.code;
-      payload.stationName = station.name;
+    const match = matchCentre(wardId, centre);
+    if (match) {
+      payload.stationName = match.name;
     } else {
       payload.stationName = centre;
       if (wardId) add("warning", `Polling centre "${centre}" is not on this ward's list — saved as a name only`);
