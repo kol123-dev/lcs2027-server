@@ -57,7 +57,7 @@ const PROGRAMMES = [
       "Termly fee awards and one-off bursaries paid directly to secondary schools, colleges and universities on behalf of students whose households cannot raise the balance.",
     detailFields: [
       { key: "category", label: "Category", type: "select", options: ["Bursary", "Full scholarship"] },
-      { key: "institution", label: "School", type: "text" },
+      { key: "institution", label: "Institution", type: "text" },
       { key: "level", label: "Level", type: "select", options: ["Primary", "Secondary", "Tertiary", "University"] },
       { key: "term", label: "Period", type: "text", help: "e.g. 2026 Term 1" },
     ],
