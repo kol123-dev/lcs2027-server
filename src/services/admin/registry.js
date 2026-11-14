@@ -364,7 +364,21 @@ export const RESOURCES = [
       { name: "amount", label: "Amount issued (KES)", type: "float", min: 0, section: "Delivery" },
       { name: "dateIssued", label: "Date issued", type: "date", section: "Delivery" },
       { name: "status", label: "Status", type: "select", required: true, options: opts(BENEFICIARY_STATUS), section: "Delivery" },
-      { name: "details", label: "Programme extras (JSON object)", type: "json", jsonShape: "object", section: "Delivery" },
+      {
+        // The programme's own sheet columns (a scholarship's Institution and
+        // Period, a group programme's Item and Group) are stored in this object.
+        // Their shape is data — declared per programme — so the console renders
+        // typed controls for whichever programme is chosen, using the
+        // `dynamicFields.projects` map from the meta payload.
+        name: "details",
+        label: "Programme fields",
+        type: "json",
+        jsonShape: "object",
+        dynamicFields: "projects",
+        triggerField: "projectId",
+        section: "Delivery",
+        help: "Set by the programme chosen above.",
+      },
       { name: "notes", label: "Notes", type: "textarea", section: "Delivery" },
     ],
   },

@@ -1,6 +1,7 @@
 import prisma from "../../db.js";
 import { RESOURCES, resourceByKey, relationTargets } from "./registry.js";
 import { coerceFields } from "./coerce.js";
+import { resolveSheet, sheetFields } from "../projects.js";
 
 /**
  * Generic CRUD engine for the superadmin console.
@@ -297,6 +298,33 @@ export async function deleteResource(resource, key) {
 }
 
 /**
+ * Typed field lists for the console's `dynamicFields` columns, keyed by the
+ * related record that declares them.
+ *
+ * A beneficiary's programme-specific columns (Institution, Period, Level…)
+ * live inside the `details` JSON object, and their shape is data — edited per
+ * programme. The console needs them keyed by programme id so that, once a
+ * programme is chosen, the form can render the right typed controls instead of
+ * a raw JSON box. Only the programme's OWN columns are listed; the shared
+ * delivery columns are already fields on the beneficiary form.
+ */
+export async function buildDynamicFields() {
+  const rows = await prisma.project.findMany({
+    select: {
+      id: true,
+      detailFields: true,
+      fields: {
+        select: { key: true, label: true, type: true, options: true, required: true, hidden: true, help: true, order: true },
+        orderBy: { order: "asc" },
+      },
+    },
+  });
+  const projects = {};
+  for (const p of rows) projects[p.id] = resolveSheet(sheetFields(p)).extras;
+  return { projects };
+}
+
+/**
  * Option lists for every `relation` field across the registry.
  *
  * The console loads this once and uses it to render relation selects and to
@@ -344,5 +372,6 @@ export default {
   updateResource,
   deleteResource,
   buildLookups,
+  buildDynamicFields,
   resourceCounts,
 };

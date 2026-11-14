@@ -11,6 +11,7 @@ import {
   updateResource,
   deleteResource,
   buildLookups,
+  buildDynamicFields,
   resourceCounts,
 } from "../services/admin/resources.js";
 import * as users from "../services/admin/users.js";
@@ -68,11 +69,12 @@ function resource(req, res) {
 
 export async function getMeta(req, res, next) {
   try {
-    const lookups = await buildLookups();
+    const [lookups, dynamicFields] = await Promise.all([buildLookups(), buildDynamicFields()]);
     res.json({
       groups: ADMIN_GROUPS,
       resources: RESOURCES.map(publicResource),
       lookups,
+      dynamicFields,
       userRoles: users.USER_ROLES,
     });
   } catch (err) {
