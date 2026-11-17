@@ -1,15 +1,14 @@
 import { Router } from "express";
 import * as projectsCtl from "../controllers/projects.controller.js";
-import { staffOnly } from "../middleware/auth.js";
 
 const router = Router();
 
-// Projects, initiatives & achievements directory.
-// Reads: any signed-in session. Writes to a beneficiary sheet: admin/organizer.
+// Projects, initiatives & achievements directory — reads only.
+//
+// Beneficiary sheets are written from the superadmin console
+// (`/api/admin/beneficiaries`), which is the app's only CRUD surface: these
+// pages exist to view what has been delivered, not to change it.
 router.get("/", projectsCtl.getDirectory);
 router.get("/:slug", projectsCtl.getProject);
-router.post("/:slug/beneficiaries", staffOnly, projectsCtl.addBeneficiary);
-router.patch("/beneficiaries/:id", staffOnly, projectsCtl.editBeneficiary);
-router.delete("/beneficiaries/:id", staffOnly, projectsCtl.removeBeneficiary);
 
 export default router;

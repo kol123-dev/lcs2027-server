@@ -1,6 +1,5 @@
 import prisma from "../db.js";
 import context from "../data/context.js";
-import { auditEvent } from "../auth/audit.js";
 import { listActivities } from "../services/roadmap.js";
 import { deliveriesForStation } from "../services/projects.js";
 import { issuesForWard, nameKey, splitWardIssues, summariseIssues } from "../services/issues.js";
@@ -11,19 +10,14 @@ import { CATEGORY_META, classifyArea, safetyGap } from "../services/strategy.js"
  *
  * Every centre carries a `keyAchievements` list (headline wins on the
  * ground) and a `campaignMessage` (the message to deliver there). Both are
- * stored in SQLite and read straight into the advanced-search result; the
- * admin/super-user UI is planned, so staff can already edit them via
- * PATCH /api/centres/:id today.
+ * stored in SQLite and read straight into the advanced-search result; they are
+ * edited from the superadmin console (`/api/admin/centres`), which owns all
+ * CRUD in the app.
  *
  * The centre payload also carries the full 2022 tallies (Siyoi, Khatundi,
  * Nakhumicha, share, margin), the deliveries recorded against the centre and
  * the live issues raised there — so a centre view is a complete picture.
  */
-
-const cleanAchievements = (value) =>
-  Array.isArray(value)
-    ? value.filter((s) => typeof s === "string").map((s) => s.trim()).filter(Boolean).slice(0, 30)
-    : [];
 
 const parseJson = (text, fallback) => {
   try {
@@ -189,69 +183,4 @@ export async function getCentre(req, res, next) {
   }
 }
 
-/**
- * Update a centre's content ledger. Both fields are optional so callers can
- * edit just one. Writes to SQLite and mirrors the change into the live
- * in-memory store so search reflects it immediately.
- */
-export async function patchCentre(req, res, next) {
-  try {
-    const id = Number(req.params.id);
-    const { keyAchievements, campaignMessage } = req.body ?? {};
-
-    const existing = await prisma.centre.findUnique({ where: { id } });
-    if (!existing) {
-      return res.status(404).json({ error: "Centre not found", code: "NOT_FOUND" });
-    }
-
-    const data = {};
-    if (keyAchievements !== undefined) {
-      if (!Array.isArray(keyAchievements)) {
-        return res.status(400).json({ error: "keyAchievements must be an array of strings", code: "BAD_REQUEST" });
-      }
-      data.keyAchievements = JSON.stringify(cleanAchievements(keyAchievements));
-    }
-    if (campaignMessage !== undefined) {
-      if (typeof campaignMessage !== "string") {
-        return res.status(400).json({ error: "campaignMessage must be a string", code: "BAD_REQUEST" });
-      }
-      data.campaignMessage = campaignMessage.trim();
-    }
-    if (Object.keys(data).length === 0) {
-      return res.status(400).json({ error: "Nothing to update — send keyAchievements and/or campaignMessage", code: "BAD_REQUEST" });
-    }
-
-    const updated = await prisma.centre.update({ where: { id }, data });
-
-    // Mirror into the enriched store so GET /api/search + this controller
-    // agree without a server restart.
-    const live = context.centres.find((c) => c.id === id);
-    if (live) {
-      if (data.keyAchievements) live.keyAchievements = cleanAchievements(keyAchievements);
-      if (data.campaignMessage !== undefined) live.campaignMessage = data.campaignMessage;
-    }
-
-    auditEvent({
-      event: "centre.content.update",
-      userId: req.session?.user?.id,
-      phone: req.session?.user?.username,
-      role: req.session?.user?.role,
-      centreId: id,
-      centre: existing.name,
-      changed: Object.keys(data),
-    });
-
-    res.json({
-      centre: {
-        id: updated.id,
-        name: updated.name,
-        keyAchievements: JSON.parse(updated.keyAchievements || "[]"),
-        campaignMessage: updated.campaignMessage || "",
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export default { listCentres, getCentre, patchCentre };
+export default { listCentres, getCentre };

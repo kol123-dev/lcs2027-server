@@ -1,4 +1,4 @@
-import { network, updateReadiness, stationsIndex } from "../services/grassroots.js";
+import { network, stationsIndex } from "../services/grassroots.js";
 import { agentRoster } from "../services/agents.js";
 import { coordinatorRoster } from "../services/coordinators.js";
 
@@ -24,17 +24,6 @@ export async function getCoordinators(req, res, next) {
   try {
     const { areaType, ward, subCounty, q, page, pageSize } = req.query;
     res.json(await coordinatorRoster({ areaType, ward, subCounty, q, page, pageSize }));
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function patchReadiness(req, res, next) {
-  try {
-    const { wardId } = req.params;
-    const updated = await updateReadiness(wardId, req.body ?? {});
-    if (!updated) return res.status(404).json({ error: "Ward not found" });
-    res.json({ wardId, readiness: updated });
   } catch (err) {
     next(err);
   }
